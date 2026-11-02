@@ -6,13 +6,13 @@
     "email": "support@apexaiofficial.com"
   },
   "metadata": {
-    "description": "Shop Bot for Claude Code: read your Telegram store's sales, catalog, stock, orders, payments and support tickets through its MCP server"
+    "description": "Shop Bot for Claude Code: run your Telegram store's catalog, prices, coupons, licence-key stock, orders and support tickets through its MCP server"
   },
   "plugins": [
     {
       "name": "shop",
       "source": "./plugins/shop",
-      "description": "Ask about your Shop Bot store in plain language: sales reports, what needs attention, catalog and licence-key stock, orders and Stars payments, and support tickets, read through the store's own MCP server with your API token.",
+      "description": "Run your Shop Bot store in plain language: sales reports and what needs attention, catalog and price changes, coupons, licence-key imports, support replies and download restores, through the store's own MCP server with your API token. Destructive changes take a confirmed second call, and big ones wait for the owner's Approve in Telegram.",
       "category": "productivity"
     }
   ]

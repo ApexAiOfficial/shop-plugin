@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 
 import pytest
-from conftest import EXPECTED_SKILLS, PLUGIN, SKILL_FILES, SKILLS, SKILLS_DIR, frontmatter, load_json, without_code_blocks
+from conftest import (DOC_FILES, EXPECTED_SKILLS, PLUGIN, ROOT, SKILL_FILES, SKILLS, SKILLS_DIR, frontmatter,
+                      load_json, without_code_blocks)
 
 TASK_SKILLS = [name for name in EXPECTED_SKILLS if name != "shop"]
 
@@ -110,3 +111,27 @@ def test_skills_use_only_declared_non_sensitive_settings(path) -> None:
     for key in re.findall(r"\$\{user_config\.([a-z_]+)\}", path.read_text(encoding="utf-8")):
         assert key in options and not options[key].get("sensitive"), key
 
+
+#: Promises 0.1.0 made that no longer hold: the tools change the store when the token allows it.
+READ_ONLY_CLAIMS = re.compile(r"(?i)\b(?:every tool|the tools|tools) only reads?\b|nothing here changes the store"
+                              r"|every tool is read-only|all \d+ are read-only")
+
+
+@pytest.mark.parametrize("path", [*SKILL_FILES, *DOC_FILES, ROOT / "SECURITY.md"], ids=lambda p: str(p.relative_to(ROOT)))
+def test_no_file_still_says_the_tools_only_read(path) -> None:
+    match = READ_ONLY_CLAIMS.search(path.read_text(encoding="utf-8"))
+    assert not match, f"{path.relative_to(ROOT)}: {match.group(0)!r}"
+
+
+def test_the_stock_skill_warns_that_keys_reach_the_ai_provider_and_offers_other_ways() -> None:
+    body = (SKILLS_DIR / "stock" / "SKILL.md").read_text(encoding="utf-8")
+    section = " ".join(body[body.index("## Keys and the AI provider"):body.index("## Import")].split())
+    for needle in ("reach the AI provider", "/addkeys <item id>", "as a file", "github.com/ApexAiOfficial/shop-sdk",
+                   "Never repeat, quote or summarize key text"):
+        assert needle in section, needle
+    assert body.index("## Keys and the AI provider") < body.index("`stage_key_import(item_id, keys_text)`:")
+
+
+def test_the_manifest_description_no_longer_promises_read_only() -> None:
+    description = load_json(PLUGIN / ".claude-plugin" / "plugin.json")["description"]
+    assert "approv" in description.lower() and not READ_ONLY_CLAIMS.search(description)

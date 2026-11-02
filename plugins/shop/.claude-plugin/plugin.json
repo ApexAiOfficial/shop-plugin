@@ -2,7 +2,7 @@
   "name": "shop",
   "displayName": "Shop Bot",
   "version": "0.1.0",
-  "description": "Ask about your Shop Bot store in plain language: sales reports, what needs attention, catalog and licence-key stock, orders and Stars payments, and support tickets, read through the store's own MCP server with your API token.",
+  "description": "Run your Shop Bot store in plain language: sales reports and what needs attention, catalog and price changes, coupons, licence-key imports, support replies and download restores, through the store's own MCP server with your API token. Destructive changes take a confirmed second call, and big ones wait for the owner's Approve in Telegram.",
   "author": {
     "name": "ApexAiOfficial",
     "email": "support@apexaiofficial.com",
@@ -11,7 +11,7 @@
   "homepage": "https://github.com/ApexAiOfficial/shop-plugin",
   "repository": "https://github.com/ApexAiOfficial/shop-plugin",
   "license": "Apache-2.0",
-  "keywords": ["telegram", "store", "ecommerce", "digital-goods", "sales", "inventory", "support", "mcp"],
+  "keywords": ["telegram", "store", "ecommerce", "digital-goods", "sales", "inventory", "coupons", "support", "mcp"],
   "supportUrl": "https://github.com/ApexAiOfficial/shop-plugin/issues",
   "documentationUrl": "https://github.com/ApexAiOfficial/shop-plugin/tree/main/docs",
   "userConfig": {
