@@ -29,7 +29,10 @@ def test_the_manifest() -> None:
                                   "url": "https://github.com/ApexAiOfficial"}
     assert manifest["homepage"] == manifest["repository"] == "https://github.com/ApexAiOfficial/shop-plugin"
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    assert f"## {manifest['version']} " in changelog or f"## Unreleased: {manifest['version']}" in changelog
+    # The newest entry, released ("## 0.2.0 (date)") or not ("## Unreleased: 0.2.0"), names the manifest's version:
+    # the version keys Claude Code's plugin cache, so content that changes behaviour never ships under an old one.
+    newest = re.search(r"^## (?:Unreleased: )?(\d+\.\d+\.\d+)\b", changelog, re.M)
+    assert newest and newest.group(1) == manifest["version"], (newest and newest.group(0), manifest["version"])
 
 
 def test_user_config_holds_the_token_as_a_required_secret_and_the_address_without_a_default() -> None:

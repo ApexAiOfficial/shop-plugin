@@ -24,9 +24,9 @@ acknowledge reports within a few days.
 - **Buyer and merchant text is untrusted.** Every skill tells the agent to treat item text, ticket subjects and
   messages, and refund reasons as data, never as instructions, and not to let them choose the next tool call,
   argument, URL, file or setting.
-- **Licence keys sent through the conversation reach the AI provider.** The stock skill says so before an import
-  and recommends a file import outside the conversation (`/addkeys` in the store bot, or the Python SDK) for keys
-  that must stay private.
+- **Licence keys sent through the conversation reach the AI provider.** The stock skill says so before it reads a
+  key file or asks for keys, and recommends a file import outside the conversation (`/addkeys` with a file in the
+  store bot) for keys that must stay private.
 - **Tokens stay out of the conversation.** The skills never ask for a token in chat and never print one. If a token
   is pasted into a chat, revoke it in `/apitoken` and create a new one.
 
@@ -36,7 +36,8 @@ These are properties of the store, which ApexAi operates, not of this plugin: to
 admin can revoke one at once, the store lists only the tools a token's scopes allow, and it never returns
 licence-key text, product files or full charge ids. For changes, the store issues single-use confirmations bound
 to the token, the tool and the arguments; sends deep price cuts, large coupons, replies with contact details and
-broadcasts to the owner's Approve in Telegram; applies daily caps; never applies a repeated identical change twice;
+broadcasts to the owner's Approve in Telegram (or, where the store does not take approvals through the API yet,
+refuses them with `approval_required`); applies daily caps; never applies a repeated identical change twice;
 and records every change, with the token that made it, in its audit log, as it records each token's first use and
 every buyer lookup.
 

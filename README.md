@@ -107,7 +107,7 @@ token's scopes and its expiry. `/mcp` shows the `shop` server and its state.
 | `sales` | Revenue, top items, a period compared with the one before |
 | `catalog` | Finding, creating, editing, pricing, publishing, moving and deleting items and categories; variants, bundles, product files |
 | `coupons` | Listing, creating and changing coupons; broadcasts to buyers |
-| `stock` | Licence-key counts, key imports (staged, then committed), voiding a batch, releasing held keys |
+| `stock` | Licence-key counts, key imports (staged, then committed), voiding unsold keys, releasing held keys |
 | `orders` | One order, a buyer's orders, open Stars receipts, a refund's state |
 | `support` | Open tickets, replies and closing, restoring an order's downloads |
 
@@ -118,10 +118,10 @@ token's scopes and its expiry. `/mcp` shows the `shop` server and its state.
 - "Create a 'Templates' category and add a 'Notion budget template' item for 250 Stars."
 - "Why is the 'Pro licence' item not on sale? Publish it once it can be."
 - "Create a coupon SPRING20: 20% off, 200 uses, ending on 31 May."
-- "Import the keys in keys.txt into item 12." (Claude first tells you that keys passing through the
-  conversation reach the AI provider, and suggests `/addkeys` with a file for sensitive batches.)
-- "Reply to ticket 31 that the download link was reset, restore the downloads for order 1042, and close the
-  ticket."
+- "Import the keys in keys.txt into item 12." (Before reading the file, Claude tells you that keys passing
+  through the conversation reach the AI provider, and suggests `/addkeys` with a file for sensitive batches.)
+- "Restore the downloads for order 1042, then reply to ticket 31 that the download link was reset, and close
+  the ticket."
 
 ## How changes work
 
@@ -169,8 +169,8 @@ Claude Code names them `mcp__plugin_shop_shop__<tool>`. The store lists only the
 
 The full definitions, with input and output schemas, are in
 [contracts/merchant-mcp-v1.json](contracts/merchant-mcp-v1.json); this pre-release copy has the read tools and
-the category changes, and the rest arrive with the store's next contract. Licence-key text, product files, full
-charge ids and tokens are never returned.
+the category, item and coupon changes, and the rest arrive in later store updates. Until then a store does not
+list them. Licence-key text, product files, full charge ids and tokens are never returned.
 
 ## Troubleshooting
 
@@ -179,8 +179,8 @@ charge ids and tokens are never returned.
 | No shop tools in the session | The plugin is not configured | `/plugin configure shop@shop-plugin`, then `/reload-plugins` |
 | `/mcp` shows `shop` failed, 401 | Wrong token, or it expired or was revoked | Create a new token with `/apitoken new <name>` and configure it |
 | `/mcp` shows `shop` failed, 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
-| A tool you expected is missing | The token's preset does not include its scope | Create a token with a preset that has it |
-| No change tools at all | The token was created before the store took changes, or has no write scope | Create a Support, Catalog and stock or Full token |
+| A tool you expected is missing | The token's preset does not include its scope, or your store does not offer that change yet | If "Check my shop connection" shows the scope, a new token does not help; otherwise create a token with a preset that has it |
+| No change tools at all | The token has no write scope (or was created before the store took changes), or changes through the API are off for your store | If the token shows `:write` scopes, ask ApexAi support; otherwise create a Support, Catalog and stock or Full token |
 | A change "waits for approval" | It is a deep price cut, a large coupon, a reply with contact details or a broadcast | The store owner taps Approve on the card the store bot sent |
 | `approval_required` | The store does not take approvals through the API yet | Make that change in the store bot or its admin app |
 | `daily_cap` | A daily limit is reached | Wait until the time Claude reports |
@@ -202,10 +202,9 @@ The plugin contacts nothing else, and sends no telemetry.
 - The token is sent only to the address you configure, as a bearer header.
 - Tool results and everything you send go through your Claude Code conversation, so they reach the AI provider
   your Claude Code uses (for example Anthropic): support ticket text with a Support or Full token, buyer
-  Telegram ids with a Full token, and **licence keys you import through the conversation**. For keys that must
-  stay private, use `/addkeys` with a file in the store bot, or the
-  [Python SDK](https://github.com/ApexAiOfficial/shop-sdk). Choose the Read-only preset if you want Claude to
-  see the least.
+  Telegram ids with a Full token, and **licence keys you import through the conversation**; they also stay in
+  your Claude Code session history. For keys that must stay private, use `/addkeys` with a file in the store
+  bot. Choose the Read-only preset if you want Claude to see the least.
 - The store records each token's first use and first change, every change (with the token that made it), and
   every buyer lookup (a buyer filter, or a ticket that shows its buyer), in its audit log.
 

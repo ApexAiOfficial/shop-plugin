@@ -66,7 +66,9 @@ nothing; **Support** has `catalog:read`, `orders:read`, `support:read`, `support
 `catalog:write`, `pricing:write` and `inventory:write`; **Full** has every scope, including `customers:read`
 (buyer Telegram ids, and `list_orders` with `buyer`), `coupons:write` and `broadcasts:write`. Without
 `customers:read`, buyer ids come back as `null`. A token created before the store took changes through the
-API has no write scope: the owner creates a new one.
+API has no write scope: the owner creates a new one. A change the store does not offer yet is not listed
+for any token, and when changes through the API are off for the store, no change tool is listed at all,
+whatever the scopes: only reads work, and a new token does not help (ApexAi support can say why).
 
 ## Pick the skill
 
@@ -77,7 +79,7 @@ API has no write scope: the owner creates a new one.
 | Revenue, top items, a period compared with the one before | sales |
 | Find, create, edit, price, publish, hide, move or delete items and categories; variants, bundles, files | catalog |
 | Coupons (list, create, change, switch off) and broadcasts to buyers | coupons |
-| Licence-key stock: counts, imports, voiding a batch, releasing held keys | stock |
+| Licence-key stock: counts, imports, voiding unsold keys, releasing held keys | stock |
 | One order, a buyer's orders, open receipts, a refund's state | orders |
 | Support tickets (read, reply, close) and restoring an order's downloads | support |
 
@@ -117,19 +119,22 @@ Never split or reshape a change to avoid a confirmation or an approval.
   `list_orders` keeps the first page's filters). `list_orders` returns 25 orders a page and spans at most
   92 days, and `list_payments` 20 receipts; `list_items` and `list_coupons` take a `limit` up to 50, the
   other lists up to 100.
-- **Budgets.** About 5 calls a second per token (bursts of 20). Whole-window reads (`sales_summary`, and
-  `list_orders` with `summary`) also spend a reports budget of one a second (bursts of 5), and changes a
-  write budget of one a second (bursts of 10). Past a budget a tool answers `rate_limited` with
-  `retry_after` seconds: wait that long, never retry in a loop.
+- **Budgets.** About 5 calls a second per token (bursts of 20): past that, the store answers HTTP 429
+  before any tool runs, so the host reports the call as failed; wait a second or two and make calls more
+  slowly. Whole-window reads (`sales_summary`, and `list_orders` with `summary`) also spend a reports budget
+  of one a second (bursts of 5), and changes a write budget of one a second (bursts of 10). Past those a
+  tool answers `rate_limited` with `retry_after` seconds: wait that long, never retry in a loop.
 - **Daily caps** (rolling 24 hours): 500 changes per token; 20 coupon changes per token; 50 replies per
   token and 10 per ticket; 3 download restores per order; 30 approval requests per token, 5 pending at a
   time; 3 broadcasts per store, the bot's own included. Past a cap: `daily_cap` with `retry_after`. Tell
   the user when it frees; never retry before.
 - **Suspension.** While the store is suspended, publishing, creating or widening a coupon, and broadcasts
   answer `store_suspended`; other changes still work.
-- **Retries.** A change repeated with identical arguments within 10 minutes is not made twice: it answers
-  the first result with `replayed` true. To create two identical things on purpose, vary them. A refused
-  call is not stored: fix the cause and call again.
+- **Retries.** A create (a category, item, variant or bundle), a reply or a download restore repeated with
+  identical arguments within 10 minutes is not made twice: it answers the first result with `replayed`
+  true. Tell the user the first result stands, and ask how a second one should differ; never change their
+  text or numbers yourself to get past it. Other changes repeated with the same values answer `noop`. A
+  refused call is not stored: fix the cause and call again.
 - **Never returned:** licence-key text, product files, full Telegram charge ids, the token itself.
 - **Not through the API:** refunds, resolving payments, invoices, messages to one buyer, product photos and
   file uploads (`request_product_file` asks the owner for the file), AI settings. The owner does these in
