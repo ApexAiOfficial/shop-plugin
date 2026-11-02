@@ -5,9 +5,10 @@
     python tools/live_check.py
 
 It runs ``initialize`` and ``tools/list``, checks that every listed tool is in contracts/merchant-mcp-v1.json
-with the same definition, then calls each listed tool that needs no argument and reports whether it answered.
-Every tool only reads, so nothing in the store changes. The token travels only in the Authorization header
-and is never printed; answers are summarized, never shown.
+with the same definition, then calls the listed read tools that need no argument and reports whether they
+answered. It never calls a tool that changes the store, even with a write token: a tool in NO_ARGUMENT_TOOLS
+that the contract does not mark read-only is refused. The token travels only in the Authorization header and
+is never printed; answers are summarized, never shown.
 """
 
 from __future__ import annotations
@@ -71,6 +72,9 @@ def main() -> int:
     names = {tool["name"] for tool in listed}
     for name in NO_ARGUMENT_TOOLS:
         if name not in names:
+            continue
+        if not contract.get(name, {}).get("annotations", {}).get("readOnlyHint"):
+            problems.append(f"{name}: not read-only in the contract, not called")
             continue
         result = store.rpc("tools/call", {"name": name, "arguments": {}})
         verdict = "error " + json.loads(result["content"][0]["text"]).get("error", "?") if result.get("isError") else "ok"

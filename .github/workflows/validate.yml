@@ -17,7 +17,7 @@ concurrency:
 env:
   # The Claude Code version the plugin is verified against. Raise it deliberately, after a local check.
   CLAUDE_CODE_VERSION: "2.1.282"
-  SKILLS: "shop setup store-health sales catalog orders support"
+  SKILLS: "shop setup store-health sales catalog coupons stock orders support"
 
 jobs:
   claude-code:
@@ -66,7 +66,7 @@ jobs:
       - name: Every skill is part of the plugin
         run: |
           claude plugin details shop@shop-plugin | tee "$RUNNER_TEMP/details.txt"
-          for skill in $SKILLS; do grep -Eq "Skills \(7\).*\b${skill}\b" "$RUNNER_TEMP/details.txt" || { echo "missing skill: $skill"; exit 1; }; done
+          for skill in $SKILLS; do grep -Eq "Skills \(9\).*\b${skill}\b" "$RUNNER_TEMP/details.txt" || { echo "missing skill: $skill"; exit 1; }; done
       - name: The configured token reaches the configured address (stand-in MCP server)
         env:
           PROBE_KEY: shop-ci-probe-token

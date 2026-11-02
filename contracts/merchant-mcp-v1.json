@@ -1,5 +1,5 @@
 {
-  "api_revision": "2026-11-02",
+  "api_revision": "2026-11-03",
   "path": "/api/merchant/v1/mcp",
   "protocol_versions": [
     "2025-11-25",
@@ -7,6 +7,8 @@
     "2025-03-26"
   ],
   "scopes": {
+    "create_category": "catalog:write",
+    "delete_category": "catalog:write",
     "get_item": "catalog:read",
     "get_order": "orders:read",
     "get_store": null,
@@ -17,8 +19,10 @@
     "list_payments": "orders:read",
     "list_stock": "inventory:read",
     "list_tickets": "support:read",
+    "move_category": "catalog:write",
     "needs_attention": "reports:read",
-    "sales_summary": "reports:read"
+    "sales_summary": "reports:read",
+    "update_category": "catalog:write"
   },
   "tools": [
     {
@@ -1811,6 +1815,892 @@
       },
       "name": "get_ticket",
       "title": "Get support ticket"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Create category"
+      },
+      "description": "Create a catalog category, shown in the store, at the end of the category list.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "type": "object"
+      },
+      "name": "create_category",
+      "outputSchema": {
+        "$defs": {
+          "ApprovalInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "status": {
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "expires_at"
+            ],
+            "title": "ApprovalInfo",
+            "type": "object"
+          },
+          "Category": {
+            "additionalProperties": false,
+            "properties": {
+              "hidden_items": {
+                "title": "Hidden Items",
+                "type": "integer"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "is_active": {
+                "title": "Is Active",
+                "type": "boolean"
+              },
+              "items": {
+                "description": "Items in the category.",
+                "title": "Items",
+                "type": "integer"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "is_active",
+              "items",
+              "hidden_items"
+            ],
+            "title": "Category",
+            "type": "object"
+          },
+          "ConfirmationInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "description": "Single use; pass it back as confirmation once the user agrees.",
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "expires_at"
+            ],
+            "title": "ConfirmationInfo",
+            "type": "object"
+          },
+          "Effect": {
+            "additionalProperties": false,
+            "properties": {
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "summary": {
+                "description": "One line for the user: what the change does.",
+                "title": "Summary",
+                "type": "string"
+              }
+            },
+            "required": [
+              "summary",
+              "details"
+            ],
+            "title": "Effect",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ApprovalInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ConfirmationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Effect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What to do next, for an agent.",
+            "title": "Next"
+          },
+          "noop": {
+            "description": "True when nothing needed to change.",
+            "title": "Noop",
+            "type": "boolean"
+          },
+          "replayed": {
+            "description": "True when this is the stored answer of an earlier identical request.",
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Category"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "done",
+              "confirmation_required",
+              "pending_approval"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "replayed",
+          "noop",
+          "result",
+          "confirmation",
+          "approval",
+          "effect",
+          "next"
+        ],
+        "title": "CategoryAnswer",
+        "type": "object"
+      },
+      "title": "Create category"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Edit category"
+      },
+      "description": "Rename a category, or show or hide it with every item in it; set at least one of title and active.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category_id": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "category_id"
+        ],
+        "type": "object"
+      },
+      "name": "update_category",
+      "outputSchema": {
+        "$defs": {
+          "ApprovalInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "status": {
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "expires_at"
+            ],
+            "title": "ApprovalInfo",
+            "type": "object"
+          },
+          "Category": {
+            "additionalProperties": false,
+            "properties": {
+              "hidden_items": {
+                "title": "Hidden Items",
+                "type": "integer"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "is_active": {
+                "title": "Is Active",
+                "type": "boolean"
+              },
+              "items": {
+                "description": "Items in the category.",
+                "title": "Items",
+                "type": "integer"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "is_active",
+              "items",
+              "hidden_items"
+            ],
+            "title": "Category",
+            "type": "object"
+          },
+          "ConfirmationInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "description": "Single use; pass it back as confirmation once the user agrees.",
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "expires_at"
+            ],
+            "title": "ConfirmationInfo",
+            "type": "object"
+          },
+          "Effect": {
+            "additionalProperties": false,
+            "properties": {
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "summary": {
+                "description": "One line for the user: what the change does.",
+                "title": "Summary",
+                "type": "string"
+              }
+            },
+            "required": [
+              "summary",
+              "details"
+            ],
+            "title": "Effect",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ApprovalInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ConfirmationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Effect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What to do next, for an agent.",
+            "title": "Next"
+          },
+          "noop": {
+            "description": "True when nothing needed to change.",
+            "title": "Noop",
+            "type": "boolean"
+          },
+          "replayed": {
+            "description": "True when this is the stored answer of an earlier identical request.",
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Category"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "done",
+              "confirmation_required",
+              "pending_approval"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "replayed",
+          "noop",
+          "result",
+          "confirmation",
+          "approval",
+          "effect",
+          "next"
+        ],
+        "title": "CategoryAnswer",
+        "type": "object"
+      },
+      "title": "Edit category"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Move category"
+      },
+      "description": "Move a category to a new place in the store's category list (0 is first; past the end means last).",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "category_id": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "to_index": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category_id",
+          "to_index"
+        ],
+        "type": "object"
+      },
+      "name": "move_category",
+      "outputSchema": {
+        "$defs": {
+          "ApprovalInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "status": {
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "expires_at"
+            ],
+            "title": "ApprovalInfo",
+            "type": "object"
+          },
+          "CategoryMoved": {
+            "additionalProperties": false,
+            "properties": {
+              "from_index": {
+                "title": "From Index",
+                "type": "integer"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "to_index": {
+                "title": "To Index",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "from_index",
+              "to_index"
+            ],
+            "title": "CategoryMoved",
+            "type": "object"
+          },
+          "ConfirmationInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "description": "Single use; pass it back as confirmation once the user agrees.",
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "expires_at"
+            ],
+            "title": "ConfirmationInfo",
+            "type": "object"
+          },
+          "Effect": {
+            "additionalProperties": false,
+            "properties": {
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "summary": {
+                "description": "One line for the user: what the change does.",
+                "title": "Summary",
+                "type": "string"
+              }
+            },
+            "required": [
+              "summary",
+              "details"
+            ],
+            "title": "Effect",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ApprovalInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ConfirmationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Effect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What to do next, for an agent.",
+            "title": "Next"
+          },
+          "noop": {
+            "description": "True when nothing needed to change.",
+            "title": "Noop",
+            "type": "boolean"
+          },
+          "replayed": {
+            "description": "True when this is the stored answer of an earlier identical request.",
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CategoryMoved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "done",
+              "confirmation_required",
+              "pending_approval"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "replayed",
+          "noop",
+          "result",
+          "confirmation",
+          "approval",
+          "effect",
+          "next"
+        ],
+        "title": "CategoryMoveAnswer",
+        "type": "object"
+      },
+      "title": "Move category"
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Delete category"
+      },
+      "description": "Delete an empty category in two calls: the first returns the effect and a confirmation, the second passes that confirmation once the user agrees.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "category_id": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "category_id"
+        ],
+        "type": "object"
+      },
+      "name": "delete_category",
+      "outputSchema": {
+        "$defs": {
+          "ApprovalInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "title": "Id",
+                "type": "integer"
+              },
+              "status": {
+                "title": "Status",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "expires_at"
+            ],
+            "title": "ApprovalInfo",
+            "type": "object"
+          },
+          "CategoryDeleted": {
+            "additionalProperties": false,
+            "properties": {
+              "category_id": {
+                "title": "Category Id",
+                "type": "integer"
+              },
+              "deleted": {
+                "title": "Deleted",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "deleted",
+              "category_id"
+            ],
+            "title": "CategoryDeleted",
+            "type": "object"
+          },
+          "ConfirmationInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "expires_at": {
+                "format": "date-time",
+                "title": "Expires At",
+                "type": "string"
+              },
+              "id": {
+                "description": "Single use; pass it back as confirmation once the user agrees.",
+                "title": "Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "expires_at"
+            ],
+            "title": "ConfirmationInfo",
+            "type": "object"
+          },
+          "Effect": {
+            "additionalProperties": false,
+            "properties": {
+              "details": {
+                "additionalProperties": true,
+                "title": "Details",
+                "type": "object"
+              },
+              "summary": {
+                "description": "One line for the user: what the change does.",
+                "title": "Summary",
+                "type": "string"
+              }
+            },
+            "required": [
+              "summary",
+              "details"
+            ],
+            "title": "Effect",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ApprovalInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ConfirmationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effect": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Effect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What to do next, for an agent.",
+            "title": "Next"
+          },
+          "noop": {
+            "description": "True when nothing needed to change.",
+            "title": "Noop",
+            "type": "boolean"
+          },
+          "replayed": {
+            "description": "True when this is the stored answer of an earlier identical request.",
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CategoryDeleted"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "done",
+              "confirmation_required",
+              "pending_approval"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "replayed",
+          "noop",
+          "result",
+          "confirmation",
+          "approval",
+          "effect",
+          "next"
+        ],
+        "title": "CategoryDeleteAnswer",
+        "type": "object"
+      },
+      "title": "Delete category"
     }
   ]
 }
