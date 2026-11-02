@@ -170,8 +170,9 @@ Claude Code names them `mcp__plugin_shop_shop__<tool>`. The store lists only the
 | `send_broadcast`, `cancel_broadcast` | `broadcasts:write` | approval to send; direct to cancel |
 
 The full definitions, with input and output schemas, are in
-[contracts/merchant-mcp-v1.json](contracts/merchant-mcp-v1.json); this pre-release copy has the read tools and
-the category, item and coupon changes, and the rest arrive in later store updates. Until then a store does not
+[contracts/merchant-mcp-v1.json](contracts/merchant-mcp-v1.json); this pre-release copy has the read tools,
+the category, item and coupon changes, and the licence-key, support and download changes; approvals,
+broadcasts, variants, bundles, file requests and repricing arrive in a later store update. Until then a store does not
 list them. Licence-key text, product files, full charge ids and tokens are never returned.
 
 ## Troubleshooting
