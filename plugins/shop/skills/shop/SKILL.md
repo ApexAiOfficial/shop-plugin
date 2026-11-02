@@ -133,8 +133,10 @@ Never split or reshape a change to avoid a confirmation or an approval.
 - **Retries.** A create (a category, item, variant or bundle), a reply or a download restore repeated with
   identical arguments within 10 minutes is not made twice: it answers the first result with `replayed`
   true. Tell the user the first result stands, and ask how a second one should differ; never change their
-  text or numbers yourself to get past it. Other changes repeated with the same values answer `noop`. A
-  refused call is not stored: fix the cause and call again.
+  text or numbers yourself to get past it. A confirmed call or a key commit sent again answers its first
+  result (`replayed` true); an edit repeated with the same values answers `noop`. `request_product_file`
+  is neither: every call sends the owner a new prompt, so never repeat it unless the user asks. A refused
+  call is not stored: fix the cause and call again.
 - **Never returned:** licence-key text, product files, full Telegram charge ids, the token itself.
 - **Not through the API:** refunds, resolving payments, invoices, messages to one buyer, product photos and
   file uploads (`request_product_file` asks the owner for the file), AI settings. The owner does these in

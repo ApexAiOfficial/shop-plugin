@@ -136,7 +136,9 @@ Each change is one of three kinds. The store decides which, from the change itse
   the store owner a card in its private chat; nothing happens until the owner taps Approve (within 15
   minutes), and Claude reports the change as waiting until then.
 
-An identical change repeated within 10 minutes is answered with the first result, never done twice. Daily
+A create, reply or download restore repeated with identical arguments within 10 minutes answers the first
+result instead of happening twice, and an edit repeated with the same values changes nothing. A file request
+is the exception: each one sends the owner a new prompt. Daily
 caps apply per token (500 changes, 20 coupon changes, 50 replies), per order (3 download restores) and per
 store (3 broadcasts). Refunds, resolving payments, messages to a single buyer, photos and file uploads stay in
 Telegram.
@@ -184,7 +186,7 @@ list them. Licence-key text, product files, full charge ids and tokens are never
 | A change "waits for approval" | It is a deep price cut, a large coupon, a reply with contact details or a broadcast | The store owner taps Approve on the card the store bot sent |
 | `approval_required` | The store does not take approvals through the API yet | Make that change in the store bot or its admin app |
 | `daily_cap` | A daily limit is reached | Wait until the time Claude reports |
-| `rate_limited` | Too many calls in a short time | Wait the `retry_after` seconds |
+| `rate_limited` | A reports or changes budget is spent (too many calls of any kind fail with HTTP 429 instead) | Wait the `retry_after` seconds |
 | `window_too_long` | Orders span at most 92 days per call | Ask for shorter periods |
 
 Error codes: [plugins/shop/skills/shop/references/errors.md](plugins/shop/skills/shop/references/errors.md).

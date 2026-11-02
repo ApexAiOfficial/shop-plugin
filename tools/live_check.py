@@ -88,7 +88,8 @@ def main() -> int:
     problems = [f"{tool['name']}: not in the contract or changed" for tool in listed if contract.get(tool["name"]) != tool]
     print(f"{len(listed)} tools listed for this token; {len(listed) - len(problems)} match the contract")
     calls, refused = tools_to_call(contract, {tool["name"]: tool for tool in listed})
-    problems += refused
+    # A changed no-argument tool is already reported above; add only the refusals that say more.
+    problems += [p for p in refused if not p.endswith("differs from the contract, not called")]
     for name in calls:
         result = store.rpc("tools/call", {"name": name, "arguments": {}})
         verdict = "error " + json.loads(result["content"][0]["text"]).get("error", "?") if result.get("isError") else "ok"

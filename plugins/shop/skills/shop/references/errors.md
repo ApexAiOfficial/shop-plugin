@@ -17,7 +17,7 @@ confirmation), `reasons` (why an approval is needed) or `retry_after` (seconds t
 | `window_too_long` | `list_orders` covers at most 92 days | Split the period into windows of 92 days or less |
 | `rate_limited` | A per-token reports or changes budget is spent; `retry_after` says how many seconds to wait (too many calls of any kind answer HTTP 429 instead, below) | Wait, then retry once |
 | `result_too_large` | The answer would be over 100,000 characters | Ask for fewer rows (`limit`) or page with `cursor` |
-| `internal_error` | The store failed unexpectedly | Retry once: a change that went through is not made twice (a create, reply, restore or confirmed call answers its first result; an edit answers `noop`) |
+| `internal_error` | The store failed unexpectedly | Retry once: a change that went through is not made twice (a create, reply, restore, key commit or confirmed call answers its first result; an edit answers `noop`). Never retry `request_product_file` on your own: each call sends the owner another prompt |
 
 ## Changes
 

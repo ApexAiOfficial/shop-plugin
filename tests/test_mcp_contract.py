@@ -108,8 +108,9 @@ def _calls(text: str) -> list[tuple[str, list[str]]]:
 
 def _called_names(text: str) -> set[str]:
     """Every name written as a call, known or not: a tool name always has an underscore (`len(x)` is no tool),
-    so a misspelled `get_aproval(approval_id)` in prose is reported rather than skipped."""
-    return {name for name, _ in CALL.findall(text) if "_" in name}
+    so a misspelled `get_aproval(approval_id)` in prose is reported rather than skipped. A host-prefixed call
+    (`mcp__plugin_shop_shop__get_store()`) is left to the caller, which strips the prefix."""
+    return {name for name, _ in CALL.findall(text) if "_" in name and not name.startswith("mcp__")}
 
 
 def _cell_names(cell: str) -> list[str]:
@@ -277,6 +278,7 @@ def test_the_parser_finds_what_it_should() -> None:
     assert _calls(sample) == [("get_order", ["order_id"]), ("list_tickets", ["include_closed", "limit"]),
                               ("list_orders", ["status", "since"])]
     # A misspelled call in prose is named (and so reported), never dropped as unknown; `len(x)` is no tool.
+    assert _called_names("`mcp__plugin_shop_shop__get_store()`") == set()
     assert _called_names(sample + " `get_aproval(approval_id)`") == {"get_order", "list_tickets", "list_orders",
                                                                     "get_aproval"}
 
@@ -336,9 +338,9 @@ RESULT_FIELDS = {
                   "reason", "title", "quantity", "unit_price_stars"],
     "create_category": [*ENVELOPE, "summary", "details", "id", "expires_at", "title", "is_active"],
     "delete_category": [*ENVELOPE, "summary", "details", "id", "expires_at"],
-    # Pending (see PENDING_TOOLS): checked once the contract has the tool.
     "list_coupons": ["data", "next_cursor", "code", "pct_off", "is_active", "max_uses", "per_user_max_uses",
                      "expires_at", "created_at", "uses", "paid", "open_checkouts"],
+    # Pending (see PENDING_TOOLS): checked once the contract has the tool.
     "get_item_stock": ["voidable", "holds"],
     "stage_key_import": ["staged_import", "id", "expires_at", "keys", "would_add", "duplicates", "too_long",
                          "available_now", "available_after", "turns_on_key_delivery", "members_only", "comma_lines",
@@ -359,6 +361,15 @@ def test_the_result_fields_the_skills_read_exist(tool: str) -> None:
         properties |= set(definition.get("properties", {}))
     missing = [field for field in RESULT_FIELDS[tool] if field not in properties]
     assert not missing, f"{tool} no longer returns {missing}"
+
+
+def test_variant_rows_carry_their_own_version_once_update_variant_is_synced() -> None:
+    """The catalog skill sends a variant's own `version` (from its row in get_item) to update_variant. The
+    merged result-field check above cannot see that: the item-level `version` would satisfy it."""
+    if "update_variant" in PENDING_TOOLS:
+        pytest.skip("update_variant is pending a contract sync (PENDING_TOOLS)")
+    variant = TOOLS["get_item"]["outputSchema"]["$defs"]["ItemVariant"]
+    assert "version" in variant["properties"], "get_item's variant rows have no version for update_variant"
 
 
 def test_the_contract_is_plain_json_with_sorted_keys() -> None:

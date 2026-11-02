@@ -39,7 +39,7 @@ nothing unless the user then asks for it. When everything is zero, say so in one
 | Result | Meaning | Do |
 | --- | --- | --- |
 | `needs_attention` is not listed | The token lacks `reports:read` | Use `list_payments` and `list_stock` if listed; see the setup skill |
-| `rate_limited` | Too many calls | Wait `retry_after` seconds, then retry once |
+| `rate_limited` | A per-token budget is spent (too many calls of any kind answer HTTP 429 instead) | Wait `retry_after` seconds, then retry once |
 
 Other codes: `../shop/references/errors.md`.
 
