@@ -30,9 +30,9 @@ def _pending(scope: str | None, inputs: list[str], required: list[str], *, read:
 # ---------------------------------------------------------------------------------------------------------
 # PENDING CONTRACT SYNC. THE NEXT CONTRACT SYNC MUST EMPTY THIS LIST.
 #
-# The skills already teach the store's whole write surface (licence keys, support and downloads; approvals,
-# broadcasts, variants, bundles, file requests and repricing), but the vendored contract (the exact bytes
-# PENDING_CONTRACT_SHA256 pins) has only the reads and the category, item and coupon writes. Until the final
+# The skills already teach the store's whole write surface (approvals, broadcasts, variants, bundles, file
+# requests and repricing included), but the vendored contract (the exact bytes
+# PENDING_CONTRACT_SHA256 pins) has the reads, the category, item and coupon writes, and the licence-key, support and download writes. Until the final
 # contract is synced, the tools below stand in for it, with the scope, inputs and required inputs the store's
 # API defines for them, so the argument checks still run.
 #
@@ -44,18 +44,8 @@ def _pending(scope: str | None, inputs: list[str], required: list[str], *, read:
 #      change its contract without moving the revision). A deliberate partial sync sets PENDING_CONTRACT_SHA256
 #      to the new MANIFEST.json digest, after checking every entry left below against the store's API.
 # ---------------------------------------------------------------------------------------------------------
-PENDING_CONTRACT_SHA256 = "7a7583d4f8882eb08c845f9cb54788f610551533b2c8ed5277265b6ba7b9675c"
+PENDING_CONTRACT_SHA256 = "672344cc7fdc31ae452e77ccf894cf384214df9fc05c693529271b32d8463950"
 PENDING_TOOLS: dict[str, dict] = {
-    # Licence keys, support and downloads
-    "get_item_stock": _pending("inventory:read", ["item_id"], ["item_id"], read=True),
-    "stage_key_import": _pending("inventory:write", ["item_id", "keys_text"], ["item_id", "keys_text"]),
-    "commit_key_import": _pending("inventory:write", ["item_id", "staged_import", "enable_key_delivery"],
-                                  ["item_id", "staged_import"]),
-    "void_keys": _pending("inventory:write", ["item_id", "confirmation"], ["item_id"]),
-    "release_key_holds": _pending("inventory:write", ["item_id", "confirmation"], ["item_id"]),
-    "reply_ticket": _pending("support:write", ["ticket_id", "body"], ["ticket_id", "body"]),
-    "close_ticket": _pending("support:write", ["ticket_id"], ["ticket_id"]),
-    "restore_downloads": _pending("fulfillment:write", ["order_id", "downloads"], ["order_id"]),
     # Approvals, broadcasts, variants, bundles, file requests and repricing
     "get_approval": _pending(None, ["approval_id"], ["approval_id"], read=True),
     "send_broadcast": _pending("broadcasts:write", ["text"], ["text"]),
