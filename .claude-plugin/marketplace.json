@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "shop-plugin",
+  "owner": {
+    "name": "ApexAiOfficial",
+    "email": "support@apexaiofficial.com"
+  },
+  "metadata": {
+    "description": "Shop Bot for Claude Code: read your Telegram store's sales, catalog, stock, orders, payments and support tickets through its MCP server"
+  },
+  "plugins": [
+    {
+      "name": "shop",
+      "source": "./plugins/shop",
+      "description": "Ask about your Shop Bot store in plain language: sales reports, what needs attention, catalog and licence-key stock, orders and Stars payments, and support tickets, read through the store's own MCP server with your API token.",
+      "category": "productivity"
+    }
+  ]
+}

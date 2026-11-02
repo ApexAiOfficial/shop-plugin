@@ -1,0 +1,100 @@
+name: Validate
+
+# GitHub-hosted runners only: this is a public repository and must never run on self-hosted machines.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The Claude Code version the plugin is verified against. Raise it deliberately, after a local check.
+  CLAUDE_CODE_VERSION: "2.1.282"
+  SKILLS: "shop setup store-health sales catalog orders support"
+
+jobs:
+  claude-code:
+    name: Claude Code manifests and install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DISABLE_AUTOUPDATER: "1"
+      DISABLE_TELEMETRY: "1"
+    steps:
+      - name: Isolated claude home (the runner context is not available in job-level env)
+        run: echo "CLAUDE_CONFIG_DIR=$RUNNER_TEMP/claude" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22"
+      - name: Install Claude Code ${{ env.CLAUDE_CODE_VERSION }}
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version | grep -F "${CLAUDE_CODE_VERSION}"
+          mkdir -p "$CLAUDE_CONFIG_DIR"
+      - name: validate --strict (marketplace and plugin)
+        run: |
+          claude plugin validate --strict .
+          claude plugin validate --strict ./plugins/shop
+      - name: Marketplace add and plugin install from this checkout
+        run: |
+          claude plugin marketplace add "$GITHUB_WORKSPACE"
+          claude plugin install shop@shop-plugin
+      - name: The MCP server resolves from userConfig, and stays off without a token
+        run: |
+          claude plugin list --json > "$RUNNER_TEMP/list.json"
+          python3 - <<'PY'
+          import json, os
+          [plugin] = [p for p in json.load(open(os.environ["RUNNER_TEMP"] + "/list.json")) if p["id"] == "shop@shop-plugin"]
+          assert plugin["enabled"], plugin
+          assert plugin["mcpServers"] == {"shop": {"type": "http", "url": "${user_config.mcp_url}",
+                                                   "headers": {"Authorization": "Bearer ${user_config.api_token}"}}}
+          print("shop MCP server: url and bearer header from userConfig")
+          PY
+          claude mcp list > "$RUNNER_TEMP/mcp.txt" 2>&1 || true
+          cat "$RUNNER_TEMP/mcp.txt"
+          ! grep -q "plugin:shop" "$RUNNER_TEMP/mcp.txt"
+      - name: Every skill is part of the plugin
+        run: |
+          claude plugin details shop@shop-plugin | tee "$RUNNER_TEMP/details.txt"
+          for skill in $SKILLS; do grep -Eq "Skills \(7\).*\b${skill}\b" "$RUNNER_TEMP/details.txt" || { echo "missing skill: $skill"; exit 1; }; done
+      - name: The configured token reaches the configured address (stand-in MCP server)
+        env:
+          PROBE_KEY: shop-ci-probe-token
+        run: |
+          python3 tools/mcp_probe.py --port 18766 --key "$PROBE_KEY" --log "$RUNNER_TEMP/probe.jsonl" >/dev/null 2>&1 &
+          probe=$!
+          python3 -c "import socket, time
+          for _ in range(40):
+              try: socket.create_connection(('127.0.0.1', 18766), 1).close(); break
+              except OSError: time.sleep(0.25)"
+          claude plugin install shop@shop-plugin --config mcp_url=http://127.0.0.1:18766/api/merchant/v1/mcp --config "api_token=$PROBE_KEY"
+          claude mcp get plugin:shop:shop | tee "$RUNNER_TEMP/get.txt"
+          grep -q "Connected" "$RUNNER_TEMP/get.txt"
+          kill "$probe"
+          python3 tools/mcp_probe.py --check "$RUNNER_TEMP/probe.jsonl"
+
+  tests:
+    name: Skills against the MCP contract, and repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install "pytest>=8"
+      - name: Tests
+        run: python -m pytest tests
