@@ -61,7 +61,9 @@ against them meanwhile. The next sync must empty the list:
 
 - a listed tool that the synced contract has fails `test_pending_tools_are_not_in_the_contract`: delete it from
   the list, and the contract checks take over;
-- a contract with a new revision while the list is not empty fails `test_pending_tools_are_emptied_by_the_next_sync`:
-  fix every skill that names a tool the contract does not have.
+- a contract whose bytes differ from the digest the list is pinned to (`PENDING_CONTRACT_SHA256`, whatever the
+  contract's `api_revision` says) fails `test_pending_tools_are_emptied_by_the_next_sync` while the list is not
+  empty: fix every skill that names a tool the contract does not have, or, for a deliberate partial sync, check
+  every entry left and pin the new digest from `contracts/MANIFEST.json`.
 
 Result fields of pending tools (`RESULT_FIELDS`) are skipped until the tool leaves the list.

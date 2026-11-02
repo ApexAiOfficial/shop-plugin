@@ -30,32 +30,22 @@ def _pending(scope: str | None, inputs: list[str], required: list[str], *, read:
 # ---------------------------------------------------------------------------------------------------------
 # PENDING CONTRACT SYNC. THE NEXT CONTRACT SYNC MUST EMPTY THIS LIST.
 #
-# The skills already teach the store's whole write surface (items, prices and coupons; licence keys, support
-# and downloads; approvals, broadcasts, variants, bundles, file requests and repricing), but the vendored
-# contract (revision PENDING_REVISION) has only the reads and the category writes. Until the final contract is
-# synced, the tools below stand in for it, with the scope, inputs and required inputs the store's API defines
-# for them, so the argument checks still run.
+# The skills already teach the store's whole write surface (licence keys, support and downloads; approvals,
+# broadcasts, variants, bundles, file requests and repricing), but the vendored contract (the exact bytes
+# PENDING_CONTRACT_SHA256 pins) has only the reads and the category, item and coupon writes. Until the final
+# contract is synced, the tools below stand in for it, with the scope, inputs and required inputs the store's
+# API defines for them, so the argument checks still run.
 #
 # After `python tools/sync_contract.py <final merchant-mcp-v1.json>`:
 #   1. delete every entry the contract now has (test_pending_tools_are_not_in_the_contract fails until then);
 #   2. fix the skills for any tool, argument or result field the final contract names differently;
 #   3. the list should then be empty: test_pending_tools_are_emptied_by_the_next_sync fails while it is not
-#      and the contract's revision has moved on. A deliberate partial sync updates PENDING_REVISION too.
+#      and the contract's bytes differ from the pinned digest, whatever its api_revision says (the store can
+#      change its contract without moving the revision). A deliberate partial sync sets PENDING_CONTRACT_SHA256
+#      to the new MANIFEST.json digest, after checking every entry left below against the store's API.
 # ---------------------------------------------------------------------------------------------------------
-PENDING_REVISION = "2026-11-03"
+PENDING_CONTRACT_SHA256 = "7a7583d4f8882eb08c845f9cb54788f610551533b2c8ed5277265b6ba7b9675c"
 PENDING_TOOLS: dict[str, dict] = {
-    # Items, prices and coupons
-    "list_coupons": _pending("coupons:read", ["status", "code", "limit", "cursor"], [], read=True),
-    "create_item": _pending("catalog:write", ["category_id", "title", "description", "price_stars"],
-                            ["category_id", "title", "price_stars"]),
-    "update_item": _pending("catalog:write", ["item_id", "version", "title", "description", "price_stars", "active"],
-                            ["item_id"]),
-    "move_item": _pending("catalog:write", ["item_id", "to_index"], ["item_id", "to_index"]),
-    "delete_item": _pending("catalog:write", ["item_id", "confirmation"], ["item_id"]),
-    "create_coupon": _pending("coupons:write", ["code", "pct_off", "max_uses", "per_user_max_uses", "expires_at"],
-                              ["code", "pct_off"]),
-    "update_coupon": _pending("coupons:write", ["code", "active", "max_uses", "per_user_max_uses", "expires_at",
-                                                "confirmation"], ["code"]),
     # Licence keys, support and downloads
     "get_item_stock": _pending("inventory:read", ["item_id"], ["item_id"], read=True),
     "stage_key_import": _pending("inventory:write", ["item_id", "keys_text"], ["item_id", "keys_text"]),
@@ -114,6 +104,12 @@ def _reads(name: str) -> bool:
 def _calls(text: str) -> list[tuple[str, list[str]]]:
     return [(name, [arg.strip() for arg in args.split(",") if arg.strip()])
             for name, args in CALL.findall(text) if name in _known()]
+
+
+def _called_names(text: str) -> set[str]:
+    """Every name written as a call, known or not: a tool name always has an underscore (`len(x)` is no tool),
+    so a misspelled `get_aproval(approval_id)` in prose is reported rather than skipped."""
+    return {name for name, _ in CALL.findall(text) if "_" in name}
 
 
 def _cell_names(cell: str) -> list[str]:
@@ -200,7 +196,7 @@ def test_every_write_answers_the_envelope() -> None:
 @pytest.mark.parametrize("path", FILES, ids=lambda p: str(p.relative_to(ROOT)))
 def test_every_named_tool_exists(path) -> None:
     text = path.read_text(encoding="utf-8")
-    named = set(_mcp_column_names(text)) | {name for name, _ in _calls(text)}
+    named = set(_mcp_column_names(text)) | _called_names(text)
     # A host-prefixed name, like mcp__plugin_shop_shop__get_store, names a tool too.
     named |= {match for match in re.findall(r"mcp__plugin_shop_shop__([a-z_]+)", text)}
     unknown = sorted(name for name in named if name not in _known())
@@ -263,11 +259,12 @@ def test_pending_tools_are_not_in_the_contract() -> None:
 
 
 def test_pending_tools_are_emptied_by_the_next_sync() -> None:
-    revision = contract()["api_revision"]
-    assert not PENDING_TOOLS or revision == PENDING_REVISION, (
-        f"the contract was synced to revision {revision}, but PENDING_TOOLS still lists {sorted(PENDING_TOOLS)}: "
+    """Pinned to the contract's bytes, not its api_revision: the store can change its contract within a revision."""
+    digest = load_json(ROOT / "contracts" / "MANIFEST.json")["files"]["merchant-mcp-v1.json"]["sha256"]
+    assert not PENDING_TOOLS or digest == PENDING_CONTRACT_SHA256, (
+        f"the contract was synced (sha256 {digest[:12]}), but PENDING_TOOLS still lists {sorted(PENDING_TOOLS)}: "
         "every skill tool must be in the synced contract. Empty PENDING_TOOLS (or, for a deliberate partial sync, "
-        "remove the synced tools and set PENDING_REVISION)")
+        "check every entry left and set PENDING_CONTRACT_SHA256 to the new digest)")
 
 
 def test_the_parser_finds_what_it_should() -> None:
@@ -279,15 +276,39 @@ def test_the_parser_finds_what_it_should() -> None:
                                          "list_payments", "list_tickets"]
     assert _calls(sample) == [("get_order", ["order_id"]), ("list_tickets", ["include_closed", "limit"]),
                               ("list_orders", ["status", "since"])]
+    # A misspelled call in prose is named (and so reported), never dropped as unknown; `len(x)` is no tool.
+    assert _called_names(sample + " `get_aproval(approval_id)`") == {"get_order", "list_tickets", "list_orders",
+                                                                    "get_aproval"}
 
 
-def test_the_live_check_calls_only_read_tools() -> None:
+def _live_check():
     spec = importlib.util.spec_from_file_location("live_check", ROOT / "tools" / "live_check.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def test_the_live_check_calls_only_read_tools() -> None:
+    module = _live_check()
     for name in module.NO_ARGUMENT_TOOLS:
         assert TOOLS[name]["annotations"]["readOnlyHint"] is True, name
         assert not TOOLS[name]["inputSchema"].get("required"), name
+    listed = {name: TOOLS[name] for name in module.NO_ARGUMENT_TOOLS}
+    assert module.tools_to_call(TOOLS, listed) == (list(module.NO_ARGUMENT_TOOLS), [])
+
+
+def test_the_live_check_never_calls_a_tool_the_store_lists_differently() -> None:
+    """A listing that differs from the contract, or is not read-only, is reported and never called."""
+    module = _live_check()
+    changed = json.loads(json.dumps(TOOLS["list_payments"]))
+    changed["inputSchema"].setdefault("required", []).append("cursor")
+    writable = json.loads(json.dumps(TOOLS["list_stock"]))
+    writable["annotations"]["readOnlyHint"] = False
+    contract_view = {**TOOLS, "list_stock": writable}  # even when the contract itself says so
+    calls, problems = module.tools_to_call(contract_view, {"get_store": TOOLS["get_store"], "list_payments": changed,
+                                                           "list_stock": writable})
+    assert calls == ["get_store"]
+    assert problems == ["list_stock: not read-only, not called", "list_payments: differs from the contract, not called"]
 
 
 #: Result fields the skills tell the agent to read, by tool. A contract update that drops one fails here.
