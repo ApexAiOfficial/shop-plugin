@@ -1,8 +1,8 @@
 {
   "name": "shop",
   "displayName": "Shop Bot",
-  "version": "0.2.0",
-  "description": "Run your Shop Bot store in plain language: sales reports and what needs attention, catalog and price changes, coupons, licence-key imports, support replies and download restores, through the store's own MCP server with your API token. Destructive changes take a confirmed second call, and big ones wait for the owner's Approve in Telegram.",
+  "version": "0.3.0",
+  "description": "Run your Shop Bot store in plain language: sales reports and what needs attention, catalog, price and membership plan changes, coupons, licence-key imports, support replies and download restores, review moderation and custom-order requests, through the store's own MCP server with your API token. Destructive changes take a confirmed second call, and big ones wait for the owner's Approve in Telegram.",
   "author": {
     "name": "ApexAiOfficial",
     "email": "support@apexaiofficial.com",

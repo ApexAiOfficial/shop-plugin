@@ -3,6 +3,40 @@
 All notable changes to this plugin are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
+## [0.3.0] - Unreleased
+
+The plugin covers the store's A4.4 areas: review moderation and responses, custom-order requests, membership
+plans and version labels. As before, the store lists the tools a token allows and enforces every
+confirmation, approval and limit.
+
+- **Three new skills.** `reviews`: the moderation queue, publishing, rejecting or hiding reviews by the
+  owner's own rules (shown per review before anything changes), and the store's public response.
+  `custom-orders`: reading requests, asking the buyer a clarifying question, rejecting a request, and their
+  limits. `memberships`: a plan's price (new joins only; live members keep their locked price) and switching
+  a plan on or off.
+- **Version labels** in the `catalog` skill: `set_version_label` sets the product version buyers see, which
+  is not part of the item's `version`, so an `update_item` stays valid.
+- **13 new tools** in the overview's tool table, with scope and level: `list_reviews`, `get_review`,
+  `publish_review`, `withhold_review`, `respond_review`, `list_custom_orders`, `get_custom_order`,
+  `clarify_custom_order`, `reject_custom_order`, `list_membership_plans`, `set_membership_price`,
+  `set_membership_active` and `set_version_label`.
+- **New scopes:** `reviews:read`, `reviews:write`, `custom_orders:read` and `custom_orders:write`. Read-only
+  tokens created now read reviews and custom orders; Full tokens also change them. A token created before
+  the store offered them is never widened (the owner creates a new one), though it gets the membership plan
+  and version label tools its catalog scopes allow.
+- **Two-step:** changing a plan's price, switching a plan off, rejecting or hiding a review the rating
+  counts, and asking or rejecting a custom-order buyer (the buyer is messaged at once; a reject is final).
+- **Approval:** a membership price cut to less than half, and a review response, custom-order question or
+  reason, or a review to publish, that holds a link or contact details.
+- **Buyer text is data:** the shared safety block in every skill now names review titles and bodies and
+  custom-order briefs and answers as untrusted; a review never decides its own outcome.
+- **Limits:** 50 review changes per token a day and 5 responses per review; custom-order questions and
+  rejections count with ticket replies (50 per token) and take at most 3 questions per request a day. The
+  overview keeps the essentials; presets, budgets, caps and retries are in `shop/references/limits.md`.
+- **Errors:** `wrong_state` and `not_publishable`.
+- **The contract:** synced to API revision 2026-11-05 (53 tools); the tests pin the new tools' scopes,
+  levels, arguments and the result fields the skills read.
+
 ## Unreleased: 0.2.0
 
 The plugin now administers the store, not just reads it: the skills drive the store's write tools, with the
