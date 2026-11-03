@@ -132,10 +132,11 @@ Each change is one of three kinds. The store decides which, from the change itse
   coupon and bulk repricing. The first call changes nothing and returns the exact effect; Claude shows it to
   you and confirms only after you agree. A confirmation is single use and expires in 5 minutes.
 - **Approval:** a price cut to less than half the price (an item, a variant or a bulk reprice), a new variant
-  priced under half of the cheapest one, a coupon of 50% or more or with unlimited or more than 1,000 uses, a
-  support reply with a link or contact details, and every broadcast. The store answers `pending_approval`,
-  and the store bot sends the store owner a card in its private chat; nothing happens until the owner taps
-  Approve (within 15 minutes), and Claude reports the change as waiting until then.
+  priced under half of the cheapest one, an item added to a bundle that leaves it under half of what its items
+  sell for apart, a coupon of 50% or more or with unlimited or more than 1,000 uses, a support reply with a
+  link or contact details, and every broadcast. The store answers `pending_approval`, and the store bot sends
+  the store owner a card in its private chat; nothing happens until the owner taps Approve (within 15
+  minutes), and Claude reports the change as waiting until then.
 
 A create, reply or download restore repeated with identical arguments within 10 minutes answers the first
 result instead of happening twice, and an edit repeated with the same values changes nothing. A file request
@@ -158,7 +159,8 @@ Claude Code names them `mcp__plugin_shop_shop__<tool>`. The store lists only the
 | `list_stock`, `get_item_stock` | `inventory:read` | read |
 | `list_coupons` | `coupons:read` | read |
 | `list_tickets`, `get_ticket` | `support:read` | read |
-| `create_category`, `update_category`, `move_category`, `move_item`, `update_bundle`, `request_product_file` | `catalog:write` | direct |
+| `create_category`, `update_category`, `move_category`, `move_item`, `request_product_file` | `catalog:write` | direct |
+| `update_bundle` | `catalog:write` (and `pricing:write` to add an item) | direct; approval when an add leaves the bundle under half of what its items sell for apart |
 | `create_item`, `create_bundle` | `catalog:write` and `pricing:write` | direct |
 | `add_variant` | `catalog:write` and `pricing:write` | direct; approval for a price under half of the cheapest variant on sale |
 | `update_item`, `update_variant` | `catalog:write` (and `pricing:write` for a price) | direct; approval for a deep price cut |
@@ -185,7 +187,7 @@ Licence-key text, product files, full charge ids and tokens are never returned.
 | `/mcp` shows `shop` failed, 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
 | A tool you expected is missing | The token's preset does not include its scope, or your store does not offer that change yet | If "Check my shop connection" shows the scope, a new token does not help; otherwise create a token with a preset that has it |
 | No change tools at all | The token has no write scope (or was created before the store took changes), or changes through the API are off for your store | If the token shows `:write` scopes, ask ApexAi support; otherwise create a Support, Catalog and stock or Full token |
-| A change "waits for approval" (`pending_approval`) | It is a deep price cut, a new variant under half of the cheapest, a large coupon, a reply with contact details or a broadcast | The store owner taps Approve on the card the store bot sent; ask Claude to check it afterwards |
+| A change "waits for approval" (`pending_approval`) | It is a deep price cut, a new variant under half of the cheapest, a bundle add that leaves the bundle under half of its items' prices, a large coupon, a reply with contact details or a broadcast | The store owner taps Approve on the card the store bot sent; ask Claude to check it afterwards |
 | `daily_cap` | A daily limit is reached | Wait until the time Claude reports |
 | `rate_limited` | A reports or changes budget is spent (too many calls of any kind fail with HTTP 429 instead) | Wait the `retry_after` seconds |
 | `window_too_long` | Orders span at most 92 days per call | Ask for shorter periods |

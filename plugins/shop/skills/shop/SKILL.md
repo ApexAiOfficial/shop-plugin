@@ -45,7 +45,7 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `add_variant(item_id, label, price_stars)` | A new variant of an item | `catalog:write` + `pricing:write` | direct; approval for a price under half of the cheapest variant on sale |
 | `update_variant(variant_id, version, label, price_stars, note, active)` | Edit a variant, or switch it on or off | `catalog:write` (+ `pricing:write` for a price) | direct; approval for a deep price cut |
 | `create_bundle(category_id, title, price_stars)` | A new bundle | `catalog:write` + `pricing:write` | direct |
-| `update_bundle(bundle_id, add_item_id, remove_item_id)` | Add or remove one bundle component | `catalog:write` | direct |
+| `update_bundle(bundle_id, add_item_id, remove_item_id)` | Add or remove one bundle component | `catalog:write` (+ `pricing:write` to add) | direct; approval when an add leaves the bundle under half of what its items sell for apart |
 | `request_product_file(item_id, variant_id)` | The bot asks the owner in Telegram to send the item's file (a new prompt on every call) | `catalog:write` | direct |
 | `reprice_items(changes, confirmation)` | Up to 100 price changes at once | `catalog:write` + `pricing:write` | two-step; approval if any is a deep cut |
 | `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at)` | A new active coupon | `coupons:write` | direct; approval for a large coupon |
@@ -113,6 +113,8 @@ same approval, so never resend one. What needs approval:
   direct);
 - a new variant priced under half of the cheapest variant on sale, or of the item's price when it has none
   (`add_variant`);
+- an item added to a bundle that leaves the bundle priced under half of what its items sell for apart
+  (`update_bundle`);
 - a large coupon: `pct_off` 50 or more, unlimited uses, or more than 1,000 uses (`create_coupon`, and
   `update_coupon` when it widens one);
 - a support reply with contact details: a link, @mention, email address or phone number (`reply_ticket`);

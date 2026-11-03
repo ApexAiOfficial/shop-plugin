@@ -7,7 +7,7 @@ description: This skill should be used when the user asks to "find a product in 
 
 **Route.** Use the `shop` MCP tools (Claude Code shows them as `mcp__plugin_shop_shop__<tool>`). If no shop
 tool is available, load the setup skill. Changes need a token with `catalog:write`, and `pricing:write` for
-any price (the store bot's Catalog and stock or Full preset).
+any price or to add an item to a bundle (the store bot's Catalog and stock or Full preset).
 
 ## Read
 
@@ -122,6 +122,10 @@ descriptions up to 3,500.
   `remove_item_id` per call; orders already placed keep the items they had. The result is the bundle as an
   item, with `warning` set when it holds fewer than 2 items (it still sells if on sale) and
   `publish_blocker` saying why it cannot be published.
+- Adding an item to a bundle sets a price (the item then sells for a share of the bundle's), so it needs
+  `pricing:write`. An add that leaves the bundle priced under half of what its items sell for apart needs the
+  owner's approval: the answer is `pending_approval`, and the item is not in the bundle until the owner
+  approves. Never change the bundle's price or its other items on your own to avoid the approval.
 
 ### Product files
 

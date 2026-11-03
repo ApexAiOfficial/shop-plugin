@@ -25,10 +25,10 @@ store's confirmations and Telegram approvals. Nothing to configure; the store li
   `confirmation_invalid`, `no_subscribers`, `daily_cap`, `store_suspended` and more) and every approval
   outcome.
 - **Approvals:** a change that needs the owner (a deep price cut, a new variant priced under half of the cheapest,
-  a large coupon, a reply with contact details, every broadcast) answers `pending_approval`, not an error and not
-  `done`; the skills tell the agent to report it as waiting and to read the outcome from `get_approval`
-  (`reasons`, `status`, `result`, `error`). `request_product_file` sends the owner a new prompt on every call, so
-  the skills never retry it.
+  an item added to a bundle that leaves it under half of what its items sell for apart, a large coupon, a reply
+  with contact details, every broadcast) answers `pending_approval`, not an error and not `done`; the skills tell
+  the agent to report it as waiting and to read the outcome from `get_approval` (`reasons`, `status`, `result`,
+  `error`). `request_product_file` sends the owner a new prompt on every call, so the skills never retry it.
 - **The contract:** `contracts/merchant-mcp-v1.json` is the store's final one, synced to API revision 2026-11-04
   (40 tools: every change the store takes, with approvals, broadcasts, variants, bundles, file requests and
   repricing). The tests take each tool's scope, level, arguments and result fields from it, and

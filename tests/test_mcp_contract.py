@@ -40,9 +40,10 @@ PENDING_TOOLS: dict[str, dict] = {}
 #: What the contract's schema does not encode (its tool descriptions say it in prose), as the overview's tool
 #: table must state it: the tools that also need pricing:write, and those a change can send for the owner's
 #: approval.
-PRICING_TOOLS = {"create_item", "update_item", "add_variant", "update_variant", "create_bundle", "reprice_items"}
-APPROVAL_TOOLS = {"update_item", "add_variant", "update_variant", "reprice_items", "create_coupon", "update_coupon",
-                  "reply_ticket", "send_broadcast"}
+PRICING_TOOLS = {"create_item", "update_item", "add_variant", "update_variant", "create_bundle", "update_bundle",
+                 "reprice_items"}
+APPROVAL_TOOLS = {"update_item", "add_variant", "update_variant", "update_bundle", "reprice_items", "create_coupon",
+                  "update_coupon", "reply_ticket", "send_broadcast"}
 
 #: Every answer of a tool that changes the store (the write envelope).
 ENVELOPE = ["status", "replayed", "noop", "result", "confirmation", "approval", "effect", "next"]
