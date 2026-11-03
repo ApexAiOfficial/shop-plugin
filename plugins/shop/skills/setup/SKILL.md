@@ -15,11 +15,12 @@ When it is connected, `get_store` answers; when it is not, no shop tool is liste
    (support@apexaiofficial.com).
 2. A token: send `/apitoken new <name>` (for example `/apitoken new Claude laptop`) in that private chat,
    and pick what it may do:
-   - **Read-only:** reports, catalog, stock, orders and coupons; changes nothing;
+   - **Read-only:** reports, catalog, stock, orders, coupons, reviews and custom orders; changes nothing;
    - **Support:** reply to and close tickets, restore an order's downloads, read orders and the catalog;
    - **Catalog and stock:** Read-only plus creating, editing, pricing, publishing and deleting items and
-     categories, and licence-key imports;
-   - **Full:** every scope, buyer ids, coupons and broadcasts included.
+     categories, membership plans, version labels and licence-key imports;
+   - **Full:** every scope, buyer ids, coupons, broadcasts, review moderation and custom-order questions
+     included.
 
    Suggest the smallest preset that covers the task. The bot shows the token once, with a copy button, and
    the store's MCP address (ending in `/api/merchant/v1/mcp`). Only the store owner can create tokens.
@@ -46,7 +47,7 @@ When it is connected, `get_store` answers; when it is not, no shop tool is liste
 | `token_expired` or `token_revoked` | The token stopped working | The owner creates a new one with `/apitoken new <name>` |
 | `token_inactive` | Its creator no longer owns the store | The current owner creates a token |
 | 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
-| A tool is missing | The token's preset does not include its scope, or the store does not offer that change yet | If `get_store` lists the scope, a new token does not help: the store does not offer it yet. Otherwise a preset that has it: Support for tickets, Catalog and stock for catalog and keys, Full for coupons, broadcasts and buyer ids |
+| A tool is missing | The token's preset does not include its scope, or the store does not offer that change yet | If `get_store` lists the scope, a new token does not help: the store does not offer it yet. Otherwise a preset that has it: Support for tickets, Catalog and stock for catalog, plans and keys, Full for coupons, broadcasts, buyer ids, review moderation and custom orders. A token created before the store offered reviews and custom orders lacks their scopes: a new token |
 | No change tool at all, though `get_store` lists `:write` scopes | Changes through the API are off for this store | Only reads work, and a new token does not help; ApexAi support can say why |
 | `writes_disabled` | Changes through the API are off for this store | Only reads work; ApexAi support can say why |
 
