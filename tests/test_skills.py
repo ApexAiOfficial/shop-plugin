@@ -247,8 +247,52 @@ def test_the_memberships_skill_confirms_price_changes_and_switching_off() -> Non
     text = " ".join((SKILLS_DIR / "memberships" / "SKILL.md").read_text(encoding="utf-8").split())
     for needle in ("live members keep their locked price", "Join links already sent at the old price are refused",
                    "With `active` true the plan is switched on at once", "Never split a deep cut",
-                   "`set_membership_active(plan_id, active, confirmation)` with `active` false takes two calls"):
+                   "`set_membership_active(plan_id, active, confirmation)` with `active` false takes two calls",
+                   "live members keep their access and can keep renewing", "The `effect.summary` is the authority"):
         assert needle in text, needle
+    # Switching a plan off refuses only non-members; it never winds down live members.
+    assert "until it lapses" not in text
+
+
+#: What the token presets section of limits.md says about the review and custom-order scopes, which the
+#: reviews and custom-orders skills (and the README) must repeat.
+PRESET_FACTS = {
+    "Read-only": "reviews and custom orders",
+    "Support": "no buyer ids, coupons, catalog changes, reviews or custom orders",
+    "Catalog and stock": "Read-only plus",
+}
+
+
+def test_the_review_and_custom_order_preset_statements_match_the_limits_reference() -> None:
+    limits = " ".join((SKILLS_DIR / "shop" / "references" / "limits.md").read_text(encoding="utf-8").split())
+    rows = dict(re.findall(r"\| (Read-only|Support|Catalog and stock|Full) \| ([^|]+) \|", limits))
+    for preset, fact in PRESET_FACTS.items():
+        assert fact in rows[preset], (preset, fact)
+    assert "`reviews:write` and `custom_orders:write`" in rows["Full"]
+    for skill, scope in (("reviews", "reviews"), ("custom-orders", "custom_orders")):
+        text = " ".join((SKILLS_DIR / skill / "SKILL.md").read_text(encoding="utf-8").split())
+        for needle in (f"`{scope}:read`, which the store bot's Read-only, Catalog and stock and Full presets have "
+                       "when created now", f"`{scope}:write`, which only Full or a custom token has",
+                       "The Support preset has neither"):
+            assert needle in text, (skill, needle)
+    for path in (*SKILL_FILES, *DOC_FILES):
+        text = " ".join(path.read_text(encoding="utf-8").split())
+        assert "Catalog and stock presets have neither" not in text, path.name
+        assert "(Support, Catalog and stock)" not in text, path.name
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    assert "any token that has `reviews:read` or `custom_orders:read`" in readme
+
+
+def test_the_buyer_text_skills_name_their_untrusted_fields() -> None:
+    """Beyond the shared safety block, each skill names the buyer-text fields the store lists in
+    `untrusted_fields`, so the agent knows which fields to treat as data."""
+    for skill, fields in (("reviews", ("`title`", "`body`")),
+                          ("custom-orders", ("`description`", "`notes`", "`clarification_response`"))):
+        text = " ".join((SKILLS_DIR / skill / "SKILL.md").read_text(encoding="utf-8").split())
+        sentences = [s for s in re.split(r"(?<=[.:])\s", text) if "listed in `untrusted_fields`" in s]
+        assert sentences, f"{skill}: no sentence names the buyer text listed in `untrusted_fields`"
+        for field in fields:
+            assert any(field in s and "buyer text" in s for s in sentences), (skill, field)
 
 
 def test_the_catalog_skill_teaches_version_labels() -> None:

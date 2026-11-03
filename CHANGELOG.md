@@ -5,8 +5,8 @@ All notable changes to this plugin are documented here. The format follows
 
 ## [0.3.0] - Unreleased
 
-The plugin covers the store's A4.4 areas: review moderation and responses, custom-order requests, membership
-plans and version labels. As before, the store lists the tools a token allows and enforces every
+The plugin covers the store's API revision 2026-11-05: review moderation and responses, custom-order requests,
+membership plans and version labels. As before, the store lists the tools a token allows and enforces every
 confirmation, approval and limit.
 
 - **Three new skills.** `reviews`: the moderation queue, publishing, rejecting or hiding reviews by the

@@ -46,7 +46,17 @@ APPROVAL_TOOLS = {"update_item", "add_variant", "update_variant", "update_bundle
                   "update_coupon", "reply_ticket", "send_broadcast", "publish_review", "respond_review",
                   "clarify_custom_order", "reject_custom_order", "set_membership_price"}
 
-#: The A4.4 tools whose answers carry buyer text: each lists it in `untrusted_fields`, which the skills tell the
+#: Approval tools whose vendored contract description does not say "approval", each with why. Every entry
+#: must be re-checked on a contract sync: the cross-check below fails once the description says it, so the
+#: entry is dropped then.
+#: - update_bundle: the plugin teaches that an add leaving the bundle under half of its items' prices waits for
+#:   the owner's approval (the store's bundle approval fix); the revision vendored here predates it in the
+#:   store's contract. Drop the entry when a sync brings it.
+#: - update_coupon: the store sends widening a large active coupon for approval (its REST contract says so);
+#:   the MCP tool description leaves it out.
+APPROVAL_NOT_IN_CONTRACT = {"update_bundle", "update_coupon"}
+
+#: The review and custom-order tools whose answers carry buyer text: each lists it in `untrusted_fields`, which the skills tell the
 #: agent to treat as data.
 BUYER_TEXT_TOOLS = {"list_reviews", "get_review", "list_custom_orders", "get_custom_order"}
 
@@ -225,6 +235,19 @@ def test_the_overview_table_gives_every_tool_its_scope_and_level() -> None:
         assert ("approval" in level) == (name in APPROVAL_TOOLS), f"{name}: level {level!r}"
 
 
+def test_the_approval_tools_agree_with_the_contract() -> None:
+    """A write tool the contract describes as needing approval is in APPROVAL_TOOLS, and the reverse, except for
+    the commented exceptions, which must still be missing from the contract (or they are stale)."""
+    for name, tool in TOOLS.items():
+        if tool.get("annotations", {}).get("readOnlyHint"):
+            continue
+        says = "approval" in tool["description"].lower()
+        if name in APPROVAL_NOT_IN_CONTRACT:
+            assert name in APPROVAL_TOOLS and not says, f"{name}: drop it from APPROVAL_NOT_IN_CONTRACT"
+            continue
+        assert says == (name in APPROVAL_TOOLS), f"{name}: contract says approval {says}"
+
+
 def test_no_tool_is_pending() -> None:
     """The contract is final: a skill teaches only tools it has, and each is checked against the contract itself."""
     assert not PENDING_TOOLS, (f"PENDING_TOOLS lists {sorted(PENDING_TOOLS)}: sync the final contract with "
@@ -325,8 +348,8 @@ RESULT_FIELDS = {
     "list_reviews": ["data", "next_cursor", "review_id", "item_id", "item_title", "rating", "title", "body",
                      "content_state", "visibility_state", "governance_state", "is_current", "counted", "publishable",
                      "has_response", "submitted_at", "published_at", "untrusted_fields"],
-    "get_review": ["response", "history", "action", "actor_type", "at", "aggregate", "average", "count",
-                   "untrusted_fields"],
+    "get_review": ["response", "history", "action", "actor_type", "at", "reason_code", "aggregate", "average",
+                   "count", "untrusted_fields"],
     "publish_review": [*ENVELOPE, "review_id", "content_state", "visibility_state", "counted", "aggregate"],
     "withhold_review": [*ENVELOPE, "review_id", "content_state", "visibility_state", "counted", "aggregate"],
     "respond_review": [*ENVELOPE, "review_id", "created", "characters"],
@@ -336,8 +359,8 @@ RESULT_FIELDS = {
                          "rejection_reason", "notice", "attempts", "untrusted_fields"],
     "clarify_custom_order": [*ENVELOPE, "request_id", "status", "notified"],
     "reject_custom_order": [*ENVELOPE, "request_id", "status", "notified"],
-    "list_membership_plans": ["data", "plan_id", "title", "category_id", "category_title", "price_stars", "active",
-                              "live_members", "members_only_items"],
+    "list_membership_plans": ["data", "plan_id", "title", "description", "category_id", "category_title",
+                              "price_stars", "active", "live_members", "members_only_items"],
     "set_membership_price": [*ENVELOPE, "plan_id", "price_stars", "active", "live_members"],
     "set_membership_active": [*ENVELOPE, "plan_id", "price_stars", "active", "live_members"],
     "set_version_label": [*ENVELOPE, "item_id", "version_label"],

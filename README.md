@@ -208,7 +208,7 @@ Licence-key text, product files, full charge ids and tokens are never returned.
 | `/mcp` shows `shop` failed, 401 | Wrong token, or it expired or was revoked | Create a new token with `/apitoken new <name>` and configure it |
 | `/mcp` shows `shop` failed, 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
 | A tool you expected is missing | The token's preset does not include its scope, or your store does not offer that change yet | If "Check my shop connection" shows the scope, a new token does not help; otherwise create a token with a preset that has it |
-| No review or custom-order tools | The token was created before your store offered them (a stored token is never widened), or its preset has no such scope (Support, Catalog and stock) | Create a Full token, or a custom one with `reviews:*` or `custom_orders:*` |
+| No review or custom-order tools | The token was created before your store offered them (a stored token is never widened), or it lacks the scope: reading needs `reviews:read` or `custom_orders:read` (Read-only, Catalog and stock and Full created now; never Support), changes need `reviews:write` or `custom_orders:write` (only Full or a custom token) | Create a new token with a preset or custom scopes that have it |
 | No change tools at all | The token has no write scope (or was created before the store took changes), or changes through the API are off for your store | If the token shows `:write` scopes, ask ApexAi support; otherwise create a Support, Catalog and stock or Full token |
 | A change "waits for approval" (`pending_approval`) | It is a deep price cut (a membership plan's included), a new variant under half of the cheapest, a bundle add that leaves the bundle under half of its items' prices, a large coupon, a text to buyers with contact details (a reply, a review response, a custom-order question or reason, or a review to publish) or a broadcast | The store owner taps Approve on the card the store bot sent; ask Claude to check it afterwards |
 | `daily_cap` | A daily limit is reached | Wait until the time Claude reports |
@@ -230,7 +230,8 @@ The plugin contacts nothing else, and sends no telemetry.
 - The token is sent only to the address you configure, as a bearer header.
 - Tool results and everything you send go through your Claude Code conversation, so they reach the AI provider
   your Claude Code uses (for example Anthropic): support ticket text with a Support or Full token, review
-  text and custom-order briefs and answers with a Read-only or Full token, buyer Telegram ids with a Full
+  text and custom-order briefs and answers with any token that has `reviews:read` or `custom_orders:read`
+  (Read-only, Catalog and stock and Full created now, or a custom one), buyer Telegram ids with a Full
   token, and **licence keys you import through the conversation**; they also stay in your Claude Code
   session history. For keys that must stay private, use `/addkeys` with a file in the store bot. Reviews and
   custom orders never name their buyer. For the least, create a custom token with only the scopes the task

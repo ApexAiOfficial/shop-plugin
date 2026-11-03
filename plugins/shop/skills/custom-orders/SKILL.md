@@ -6,10 +6,10 @@ description: This skill should be used when the user asks "what custom orders ar
 # Custom orders
 
 **Route.** Use the `shop` MCP tools (Claude Code shows them as `mcp__plugin_shop_shop__<tool>`). If no shop
-tool is available, load the setup skill. Reading requests needs `custom_orders:read` (the store bot's
-Read-only or Full preset); asking and rejecting need `custom_orders:write` (Full, or a custom token). The
-Support and Catalog and stock presets have neither, and a token created before the store offered custom
-orders has neither: the owner creates a new one.
+tool is available, load the setup skill. Reading requests needs `custom_orders:read`, which the store bot's
+Read-only, Catalog and stock and Full presets have when created now; asking and rejecting need
+`custom_orders:write`, which only Full or a custom token has. The Support preset has neither, and a token
+created before the store offered custom orders has neither: the owner creates a new one.
 
 | Step | MCP tool |
 | --- | --- |
