@@ -35,11 +35,11 @@ acknowledge reports within a few days.
 These are properties of the store, which ApexAi operates, not of this plugin: tokens are scoped and expire, any
 admin can revoke one at once, the store lists only the tools a token's scopes allow, and it never returns
 licence-key text, product files or full charge ids. For changes, the store issues single-use confirmations bound
-to the token, the tool and the arguments; sends deep price cuts, large coupons, replies with contact details and
-broadcasts to the owner's Approve in Telegram (or, where the store does not take approvals through the API yet,
-refuses them with `approval_required`); applies daily caps; never applies a repeated identical change twice;
-and records every change, with the token that made it, in its audit log, as it records each token's first use and
-every buyer lookup.
+to the token, the tool and the arguments; sends deep price cuts (a new variant priced under half of the cheapest
+included), large coupons, replies with contact details and broadcasts to the owner's Approve in Telegram (the
+change answers `pending_approval` and waits); applies daily caps; never applies a repeated identical change twice
+(a product-file request, which only messages the owner, is the exception); and records every change, with the
+token that made it, in its audit log, as it records each token's first use and every buyer lookup.
 
 ## Scope
 

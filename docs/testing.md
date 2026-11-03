@@ -53,17 +53,9 @@ python -m pytest tests
 
 A tool, argument or result field the skills use that the new contract drops fails the tests here.
 
-### Tools waiting for the contract
+### Tools the contract does not have
 
-The skills can teach tools before the store publishes them. Such tools are listed in `PENDING_TOOLS` in
-`tests/test_mcp_contract.py`, with the scope and inputs the store's API defines, so the argument checks run
-against them meanwhile. The next sync must empty the list:
-
-- a listed tool that the synced contract has fails `test_pending_tools_are_not_in_the_contract`: delete it from
-  the list, and the contract checks take over;
-- a contract whose bytes differ from the digest the list is pinned to (`PENDING_CONTRACT_SHA256`, whatever the
-  contract's `api_revision` says) fails `test_pending_tools_are_emptied_by_the_next_sync` while the list is not
-  empty: fix every skill that names a tool the contract does not have, or, for a deliberate partial sync, check
-  every entry left and pin the new digest from `contracts/MANIFEST.json`.
-
-Result fields of pending tools (`RESULT_FIELDS`) are skipped until the tool leaves the list.
+None: `PENDING_TOOLS` in `tests/test_mcp_contract.py` is empty, and `test_no_tool_is_pending` keeps it so. If the
+skills must teach a tool before the store publishes it, add it there with the scope and inputs the store's API
+defines, so the argument checks run meanwhile; sync the contract and delete the entry before the release, because
+a skill may only name a tool the vendored contract has.

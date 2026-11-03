@@ -33,7 +33,7 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `list_coupons(status, code, limit, cursor)` | Coupons with their terms and uses | `coupons:read` | read |
 | `list_tickets(include_closed, limit)` | Support tickets, open ones first | `support:read` | read |
 | `get_ticket(ticket_id)` | One ticket's thread with author labels | `support:read` | read |
-| `get_approval(approval_id)` | A change waiting for the owner's Approve, and its outcome | any token with a write scope | read |
+| `get_approval(approval_id)` | A change waiting for the owner's Approve, and its outcome (only for the token that asked) | any token with a write scope | read |
 | `create_category(title)` | A new category, shown, at the end of the list | `catalog:write` | direct |
 | `update_category(category_id, title, active)` | Rename a category, or show or hide it with its items | `catalog:write` | direct |
 | `move_category(category_id, to_index)` | Reorder categories (0 is first) | `catalog:write` | direct |
@@ -42,11 +42,11 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `update_item(item_id, version, title, description, price_stars, active)` | Edit text or price; publish or hide | `catalog:write` (+ `pricing:write` for a price) | direct; approval for a deep price cut |
 | `move_item(item_id, to_index)` | Reorder items within their category | `catalog:write` | direct |
 | `delete_item(item_id, confirmation)` | Delete an item, or archive it when orders need it | `catalog:write` | two-step |
-| `add_variant(item_id, label, price_stars)` | A new variant of an item | `catalog:write` + `pricing:write` | direct |
+| `add_variant(item_id, label, price_stars)` | A new variant of an item | `catalog:write` + `pricing:write` | direct; approval for a price under half of the cheapest variant on sale |
 | `update_variant(variant_id, version, label, price_stars, note, active)` | Edit a variant, or switch it on or off | `catalog:write` (+ `pricing:write` for a price) | direct; approval for a deep price cut |
 | `create_bundle(category_id, title, price_stars)` | A new bundle | `catalog:write` + `pricing:write` | direct |
 | `update_bundle(bundle_id, add_item_id, remove_item_id)` | Add or remove one bundle component | `catalog:write` | direct |
-| `request_product_file(item_id, variant_id)` | The bot asks the owner in Telegram to send the item's file | `catalog:write` | direct |
+| `request_product_file(item_id, variant_id)` | The bot asks the owner in Telegram to send the item's file (a new prompt on every call) | `catalog:write` | direct |
 | `reprice_items(changes, confirmation)` | Up to 100 price changes at once | `catalog:write` + `pricing:write` | two-step; approval if any is a deep cut |
 | `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at)` | A new active coupon | `coupons:write` | direct; approval for a large coupon |
 | `update_coupon(code, active, max_uses, per_user_max_uses, expires_at, confirmation)` | Switch a coupon on or off; change its limits or expiry | `coupons:write` | direct; two-step to switch off a used coupon; approval to widen a large one |
@@ -98,18 +98,25 @@ Make only the changes the user asked for. Every change answers the same envelope
 **Two-step.** A confirmation is single use, expires in 5 minutes, and is bound to this token, this tool and
 these exact arguments: call again with the same arguments plus `confirmation`, only after the user agrees.
 
-**Approvals.** The store bot sends the owner an Approve card in its private chat; it expires after 15
-minutes. `get_approval(approval_id)` answers `status` `pending`, `done` (applied, with `result`),
-`rejected`, `expired`, `changed` (the store changed first; nothing applied) or `failed` (`error` says why).
-Check it when the user says the owner decided, not in a loop. A store that does not take approvals through
-the API yet refuses these changes with `approval_required`: the owner makes them in Telegram. What needs
-approval:
+**Approvals.** A change that needs the owner answers `pending_approval`: not an error, and nothing has changed
+yet. The store bot sends the owner an Approve card in its private chat, which expires after 15 minutes, and
+`approval` holds the `id`, `status`, `expires_at` and `reasons` (why the owner is asked).
+`get_approval(approval_id)` answers `id`, `operation`, `target`, `status`, `reasons`, `effect`, `created_at`,
+`expires_at`, `decided_at`, `result` and `error`. `status` is `pending`, `done` (applied; `result` is what the
+change's own answer would have held), `rejected`, `expired`, `changed` (the store changed first; nothing
+applied) or `failed` (`error` says why). Only the token that asked can read its approval. Check it when the
+user says the owner decided, not in a loop; asking again for an identical change that still waits answers the
+same approval, so never resend one. What needs approval:
 
 - a price cut to less than half of the reference price: the current price, or the highest price before
-  API price cuts in the last 24 hours (raises are always direct);
-- a large coupon: `pct_off` 50 or more, unlimited uses, or more than 1,000 uses;
-- a support reply with contact details: a link, @mention, email address or phone number;
-- every broadcast.
+  API price cuts in the last 24 hours (`update_item`, `update_variant`, `reprice_items`; raises are always
+  direct);
+- a new variant priced under half of the cheapest variant on sale, or of the item's price when it has none
+  (`add_variant`);
+- a large coupon: `pct_off` 50 or more, unlimited uses, or more than 1,000 uses (`create_coupon`, and
+  `update_coupon` when it widens one);
+- a support reply with contact details: a link, @mention, email address or phone number (`reply_ticket`);
+- every broadcast (`send_broadcast`).
 
 Never split or reshape a change to avoid a confirmation or an approval.
 
@@ -132,7 +139,7 @@ Never split or reshape a change to avoid a confirmation or an approval.
   answer `store_suspended`; other changes still work.
 - **Retries.** A create (a category, item, variant or bundle), a reply or a download restore repeated with
   identical arguments within 10 minutes is not made twice: it answers the first result with `replayed`
-  true. Tell the user the first result stands, and ask how a second one should differ; never change their
+  true; a change that waits for approval answers the same approval. Tell the user the first result stands, and ask how a second one should differ; never change their
   text or numbers yourself to get past it. A confirmed call or a key commit sent again answers its first
   result (`replayed` true); an edit repeated with the same values answers `noop`. `request_product_file`
   is neither: every call sends the owner a new prompt, so never repeat it unless the user asks. A refused

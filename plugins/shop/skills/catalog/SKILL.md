@@ -62,22 +62,24 @@ descriptions up to 3,500.
 
 - Whole Stars: items 1 to 100,000, variants 1 to 10,000. Raises are always direct.
 - A deep cut, to less than half of the reference price (the current price, or the highest price before API
-  price cuts in the last 24 hours), needs the owner's approval: the answer is `pending_approval`. Where the
-  store refuses it with `approval_required`, the owner sets that price in Telegram. Never split a deep cut
-  into smaller ones.
+  price cuts in the last 24 hours), needs the owner's approval: the answer is `pending_approval` (not an
+  error): nothing has changed yet, and the owner taps Approve in Telegram. Never split a deep cut into
+  smaller ones.
 - `reprice_items(changes, confirmation)`: `changes` lists up to 100 `item_id`, `version` and `price_stars`
-  entries, each `version` from `get_item`. Show the user the whole list before the first call. Without a
-  deep cut, the first call returns the effect: confirm only after the user agrees. With any deep cut, the
-  first call sends the whole batch straight to the owner's approval (`pending_approval`, or
-  `approval_required`), with no confirmation step.
+  entries, each `version` from `get_item`, each item at most once. Show the user the whole list before the
+  first call. Without a deep cut, the first call returns the effect: confirm only after the user agrees. With
+  any deep cut, the first call sends the whole batch straight to the owner's approval (`pending_approval`),
+  with no confirmation step, and none of the prices change until the owner approves. The result's `items`
+  list each `item_id`, `price_stars`, new `version` and `changed` (false: it already had that price). A stale
+  `version` is a `conflict` that names that item in `current`; an unknown item is `not_found`.
 
 ### Publish and hide
 
 - `update_item(item_id, active)` with `active` true publishes the item, false hides it.
 - `not_ready` carries the item's publish blocker. Report it and offer the fix, and make it only if the user
   asks: keys with the stock skill; a file with `request_product_file(item_id, variant_id)`, which makes the
-  store bot ask the owner, in their private chat, to send it (`open_bot_chat_first`: the owner opens that
-  chat first), or `/upload <item id>` there.
+  store bot ask the owner, in their private chat, to send it (see Product files: each call sends a new
+  prompt), or `/upload <item id>` there.
 - An item in a hidden category stays off sale (`category_hidden`) while the category is hidden. Showing the
   category with `update_category` also puts its other active items on sale: tell the user which items it
   holds (`list_items` with that `category`), and ask first. Hiding a category hides every item in it.
@@ -103,15 +105,34 @@ descriptions up to 3,500.
 
 ### Variants and bundles
 
-- `add_variant(item_id, label, price_stars)`: a label of 1 to 40 characters.
+- `add_variant(item_id, label, price_stars)`: a label of 1 to 40 characters, a price of 1 to 10,000 Stars.
+  The variant is added switched on, last in the item's list. A price under half of the cheapest variant on
+  sale (or of the item's price, when it has no variant) needs the owner's approval: the answer is
+  `pending_approval`, and no variant exists until the owner approves.
 - `update_variant(variant_id, version, label, price_stars, note, active)`: take the variant's `version`
   from its row in `get_item`, never the item's `version`; `note` "" clears the note. On `conflict`, read
   `get_item` again and take the variant's new `version` from its row, as for items. Deep cuts need
   approval, as for items.
-- `create_bundle(category_id, title, price_stars)`, then
+- `add_variant` and `update_variant` answer the variant itself as `result`: `id`, `item_id`, `label`,
+  `price_stars`, `is_active`, `file_status` (`own_file`, `item_file` or `not_offered`), `licence_note` and its
+  new `version`; use that `version` for the next edit.
+- `create_bundle(category_id, title, price_stars)` (a price of 1 to 100,000 Stars) creates a bundle that
+  stays hidden until it holds at least two items and is published. Then
   `update_bundle(bundle_id, add_item_id, remove_item_id)` with exactly one of `add_item_id` and
-  `remove_item_id` per call. A `warning` with a `publish_blocker` means a live bundle fell below 2
-  components.
+  `remove_item_id` per call; orders already placed keep the items they had. The result is the bundle as an
+  item, with `warning` set when it holds fewer than 2 items (it still sells if on sale) and
+  `publish_blocker` saying why it cannot be published.
+
+### Product files
+
+- `request_product_file(item_id, variant_id)` has the store bot ask the owner, in their private chat with
+  the bot, for the item's file (or the variant's, when `variant_id` is given); files never travel through the
+  API, and the file the owner sends in reply is attached. The result `sent` true means the prompt went out.
+- **Every call sends the owner a new prompt.** Call it once, only when the user asks, and never retry it on
+  your own, not after an error or a timeout either (an identical repeat is no `replayed` or `noop`). When
+  nothing seems to have happened, ask the user whether the owner got the prompt.
+- `open_bot_chat_first`: the owner has no private chat with the bot yet; they open one, then the user asks
+  again. `telegram_unavailable`: Telegram did not answer; tell the user.
 
 ## Present the result
 
@@ -133,7 +154,6 @@ descriptions up to 3,500.
 | `nothing_to_change` | No field to change was sent | Send the field the user wants changed |
 | `changed` | The store changed after the preview | Show the fresh preview; confirm only if the user agrees again |
 | `confirmation_invalid` | Expired, already used, or other arguments | Call again without `confirmation` for a new preview; show it, and confirm only after the user agrees to it |
-| `approval_required` | The change needs the owner's approval, which the store takes only in Telegram | The owner makes it in Telegram |
 | `insufficient_scope` | The token lacks `catalog:write` or `pricing:write` | A Catalog and stock or Full token (setup skill) |
 | `bad_cursor` | A cursor from another list | Start the list again |
 

@@ -22,12 +22,17 @@ store's confirmations and Telegram approvals. Nothing to configure; the store li
   reach the AI provider, so the stock skill warns before it reads a key file and recommends `/addkeys` with a file
   for sensitive batches.
 - **Error codes:** `references/errors.md` explains every write refusal (`conflict`, `changed`,
-  `confirmation_invalid`, `approval_required`, `daily_cap`, `store_suspended` and more) and every approval
+  `confirmation_invalid`, `no_subscribers`, `daily_cap`, `store_suspended` and more) and every approval
   outcome.
-- **The contract:** `contracts/merchant-mcp-v1.json` synced to API revision 2026-11-03 (the read tools and the
-  category, item and coupon changes). The tests take each tool's scope and level from it; tools the skills already
-  teach but the contract does not have yet are listed in `PENDING_TOOLS` (`tests/test_mcp_contract.py`), pinned to
-  the contract's digest, so the next sync must empty the list even if the revision stays the same.
+- **Approvals:** a change that needs the owner (a deep price cut, a new variant priced under half of the cheapest,
+  a large coupon, a reply with contact details, every broadcast) answers `pending_approval`, not an error and not
+  `done`; the skills tell the agent to report it as waiting and to read the outcome from `get_approval`
+  (`reasons`, `status`, `result`, `error`). `request_product_file` sends the owner a new prompt on every call, so
+  the skills never retry it.
+- **The contract:** `contracts/merchant-mcp-v1.json` is the store's final one, synced to API revision 2026-11-04
+  (40 tools: every change the store takes, with approvals, broadcasts, variants, bundles, file requests and
+  repricing). The tests take each tool's scope, level, arguments and result fields from it, and
+  `PENDING_TOOLS` (`tests/test_mcp_contract.py`) is empty: a skill may only name a tool the contract has.
 - **Tokens made before the store took changes stay read-only:** create a Support, Catalog and stock or Full token
   in `/apitoken` to change anything.
 

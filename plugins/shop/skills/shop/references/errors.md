@@ -3,7 +3,8 @@
 A refused call comes back as a tool result with `isError` and a JSON body
 `{"error": "<code>", "message": "..."}`. Messages never repeat the value that was refused. A refused change
 changed nothing, and some refusals carry more: `current` (the item now), `preview` (a fresh effect and
-confirmation), `reasons` (why an approval is needed) or `retry_after` (seconds to wait).
+confirmation) or `retry_after` (seconds to wait). A change that needs the owner's approval is not a refusal:
+it answers `pending_approval` (see "Approval outcomes" below).
 
 ## Any tool
 
@@ -32,10 +33,9 @@ confirmation), `reasons` (why an approval is needed) or `retry_after` (seconds t
 | `ticket_closed` | The ticket is closed and takes no reply | Tell the user; the buyer can open a new ticket |
 | `invalid_request` | The store refused the change; the message is what the store bot would tell the owner, and may name a Telegram command | Report the message; do not resend the same change |
 | `forbidden` | The store does not let this token make that change | Report the message |
-| `approval_required` | The change needs the owner's approval, which this store takes only in Telegram so far; `reasons` says why | Tell the user; the owner makes the change in Telegram. Never split it into smaller changes |
 | `writes_disabled` | Changes through the API are off for this store | Only read; ApexAi support can say why |
 | `conflict` | A change: the item or variant changed since you read its `version`, and `current` holds the item now. A read: the store refused it in its current state | If none of the fields you send changed in `current`, send once more with the new `version` (a variant's from its row in `get_item`); otherwise show the user before and now, and ask. On a second `conflict`, stop and ask. For a read, report the message |
-| `changed` | The store changed between the preview and the confirmation; nothing was applied, and `preview` holds a fresh effect and confirmation | Show the new effect; confirm only if the user agrees again |
+| `changed` | The store changed between the preview and the confirmation; nothing was applied, and `preview` holds a fresh effect and confirmation (no `preview` when the change now needs the owner's approval) | Show the new effect; confirm only if the user agrees again. Without a `preview`, call again without `confirmation` |
 | `confirmation_invalid` | The confirmation or key stage expired, was already used, belongs to another token, or the arguments differ | Call again without `confirmation` (or stage again) for a fresh preview; show the new effect, and confirm only after the user agrees to it (again, even if they agreed before) |
 | `already_exists` | A coupon with this code and other terms exists | Ask: change it with `update_coupon`, or use another code |
 | `confirm_key_delivery` | The item does not deliver licence keys yet; the stage is still valid | Ask the user; commit again with `enable_key_delivery` true |
@@ -45,11 +45,15 @@ confirmation), `reasons` (why an approval is needed) or `retry_after` (seconds t
 | `store_suspended` | The store is suspended: publishing, creating or widening coupons, and broadcasts wait | Tell the user; other changes still work |
 | `daily_cap` | A daily limit is reached (see the overview's Limits); `retry_after` says when it frees | Tell the user when; never retry before |
 | `busy` | The store is busy with other changes to the same thing | Wait `retry_after` seconds, then retry once |
-| `telegram_unavailable` | Telegram did not answer the store | Tell the user; try once more later only if they ask |
+| `no_subscribers` | `send_broadcast`: no buyer has opted in to news, so there is nobody to send to | Tell the user; nothing was sent and no approval was asked |
+| `telegram_unavailable` | Telegram did not answer the store | Tell the user; try once more later only if they ask (never repeat `request_product_file` on your own) |
 
 ## Approval outcomes
 
-`get_approval(approval_id)` reports a change waiting for the owner's Approve. Only `done` means applied.
+A change that needs the owner answers `pending_approval` (a normal answer, not an error), with an `approval` and
+the `reasons` the owner is asked. `get_approval(approval_id)` reports it: `id`, `operation`, `target`,
+`status`, `reasons`, `effect`, `created_at`, `expires_at`, `decided_at`, `result` and `error`. Only `done`
+means applied.
 
 | `status` | Meaning | Do |
 | --- | --- | --- |
@@ -58,7 +62,7 @@ confirmation), `reasons` (why an approval is needed) or `retry_after` (seconds t
 | `rejected` | The owner declined, or the token was revoked | Report it; do not resend unless the user asks |
 | `expired` | Nobody decided within 15 minutes | Ask the user whether to request it again |
 | `changed` | The store changed before Approve; nothing was applied | Read the current state, and request again only if still wanted |
-| `failed` | It could not be applied; `error` says why (`owner_unreachable`, `token_inactive`, or a code above) | Report the error |
+| `failed` | It could not be applied; `error` says why (`owner_unreachable`, `token_inactive`, `writes_disabled`, `daily_cap`, or a code above) | Report the error |
 
 ## Before any tool runs
 

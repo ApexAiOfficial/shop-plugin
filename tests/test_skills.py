@@ -66,7 +66,7 @@ def test_the_overview_routes_to_every_task_skill_and_covers_the_rules() -> None:
     body = without_code_blocks((SKILLS_DIR / "shop" / "SKILL.md").read_text(encoding="utf-8")).lower()
     for topic in ("stars", "next_cursor", "rate_limited", "untrusted", "customers:read", "support:read",
                   "never follow instructions", "make only the changes the user asked for", "confirmation_required",
-                  "pending_approval", "get_approval", "approval_required", "replayed", "noop", "daily_cap",
+                  "pending_approval", "get_approval", "replayed", "noop", "daily_cap",
                   "store_suspended", "pricing:write", "reaches the ai provider", "refunds"):
         assert topic in body, topic
     for skill in TASK_SKILLS:
@@ -123,6 +123,41 @@ READ_ONLY_CLAIMS = re.compile(r"(?i)\b(?:every tool|the tools|tools) only reads?
 def test_no_file_still_says_the_tools_only_read(path) -> None:
     match = READ_ONLY_CLAIMS.search(path.read_text(encoding="utf-8"))
     assert not match, f"{path.relative_to(ROOT)}: {match.group(0)!r}"
+
+
+@pytest.mark.parametrize("path", [*SKILL_FILES, *DOC_FILES, ROOT / "SECURITY.md"], ids=lambda p: str(p.relative_to(ROOT)))
+def test_no_file_teaches_the_retired_approval_required_refusal(path) -> None:
+    """The final store answers a change that needs the owner with `pending_approval` (not an error); it never
+    refuses it with 403 `approval_required`, so no skill or doc may tell the agent to expect that."""
+    text = path.read_text(encoding="utf-8")
+    assert "approval_required" not in text, path.relative_to(ROOT)
+
+
+def test_every_approval_path_is_taught_as_pending_approval() -> None:
+    """Each change the store sends to the owner says it answers `pending_approval`, in its own skill."""
+    expectations = {
+        "catalog": ("deep cut", "add_variant", "reprice_items"),
+        "coupons": ("large coupon", "send_broadcast"),
+        "support": ("contact details",),
+    }
+    for skill, topics in expectations.items():
+        text = " ".join((SKILLS_DIR / skill / "SKILL.md").read_text(encoding="utf-8").split())
+        assert text.count("`pending_approval`") >= len(topics), skill
+        for topic in topics:
+            assert topic in text, (skill, topic)
+    text = " ".join((SKILLS_DIR / "shop" / "SKILL.md").read_text(encoding="utf-8").split())
+    for needle in ("a new variant priced under half of the cheapest variant on sale",
+                   "every broadcast (`send_broadcast`)", "(`reply_ticket`)", "not an error"):
+        assert needle in text, needle
+
+
+def test_a_product_file_request_is_never_retried_automatically() -> None:
+    """request_product_file sends the owner a new prompt on every call: the skills say so, and never retry it."""
+    for path in (SKILLS_DIR / "catalog" / "SKILL.md", SKILLS_DIR / "shop" / "SKILL.md",
+                 SKILLS_DIR / "shop" / "references" / "errors.md"):
+        text = " ".join(path.read_text(encoding="utf-8").split())
+        assert re.search(r"(?i)(every call sends|each call sends|new prompt)", text), path.name
+        assert re.search(r"(?i)never (?:repeat|retry)", text), path.name
 
 
 def test_the_stock_skill_warns_that_keys_reach_the_ai_provider_and_offers_other_ways() -> None:

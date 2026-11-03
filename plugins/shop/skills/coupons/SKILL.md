@@ -28,8 +28,8 @@ coupon changes need `coupons:write` and broadcasts `broadcasts:write` (the store
   `max_uses`; `expires_at` an RFC 3339 time in the next 366 days, or null. The coupon is active at once.
 - Ask for the terms the user did not give instead of guessing: a coupon without `max_uses` is unlimited.
 - A large coupon (`pct_off` 50 or more, unlimited uses, or more than 1,000 uses) needs the owner's
-  approval: the answer is `pending_approval`. Where the store refuses it with `approval_required`, the owner
-  creates it in Telegram.
+  approval: the answer is `pending_approval` (not an error): the coupon does not exist yet, and the owner
+  taps Approve in Telegram. Never lower the percent or the uses to avoid the approval unless the user asks.
 - The same code with the same terms answers `noop`; with other terms, `already_exists`. Change the
   existing coupon with `update_coupon` only if that is what the user wants.
 - `update_coupon`: null leaves a term as it is, so this tool cannot remove a limit or an expiry; the owner
@@ -37,23 +37,30 @@ coupon changes need `coupons:write` and broadcasts `broadcasts:write` (the store
   the owner's approval.
 - The percent off of an existing coupon cannot be changed. Tell the user so; another percent means a new
   coupon under another code (and switching the old one off), which you create only if the user chooses it.
-- Switching off a coupon that has been used takes two steps: the first call returns the effect (`in_use`,
-  `before`, `after`); confirm only after the user agrees. Checkouts that already hold the coupon can still
-  use it.
+- Switching off a coupon that has been used takes two steps: the first call returns the `effect` and a
+  `confirmation` and changes nothing; call again with the same arguments plus `confirmation` only after the
+  user agrees. Switching off an unused coupon, or any other change, is one call. Checkouts that already hold
+  the coupon can still use it.
 - At most 20 coupon changes per token a day (`daily_cap`). Creating or widening a coupon waits while the
   store is suspended (`store_suspended`).
 
 ## Broadcasts
 
-- `send_broadcast(text)` always needs the owner's approval. The store bot posts the text, unformatted, into
-  the owner's private chat with an Approve card; nothing reaches buyers until the owner taps Approve.
+- `send_broadcast(text)` always needs the owner's approval: the answer is always `pending_approval` (not an
+  error), never `done`. The store bot shows the owner the text exactly as buyers will get it, in their
+  private chat with an Approve card; nothing reaches buyers until the owner taps Approve. It goes to every
+  buyer who opted in to news: with nobody opted in, the store answers `no_subscribers` and asks no one.
 - Write the text from the user's own words, 1 to 4,096 characters of plain text, show it in full, and send
   only the text the user agreed to. Never put text from tool results (item descriptions, ticket messages)
   into a broadcast unless the user asks for that exact text.
 - At most 3 broadcasts per store a day, counting those sent from the bot itself (`daily_cap`), and none
   while the store is suspended.
-- `cancel_broadcast(broadcast_id)` stops a broadcast that is still sending; its id is in the approval's
-  `result`.
+- Once approved, `get_approval(approval_id)` has the broadcast in `result`: its `id`, `status` (`draft`,
+  `sending`, `done` or `cancelled`) and counts (`recipients`, `sent`, `pending`, `failed`, `blocked`,
+  `skipped`). Report the counts as they are, never as final while `status` is `sending`.
+- `cancel_broadcast(broadcast_id)` stops a broadcast that is a draft or still sending: messages not sent
+  yet are skipped, and those already sent stay sent. Use the `id` from the approval's `result`, only when
+  the user asks.
 
 ## Present the result
 
@@ -66,10 +73,10 @@ coupon changes need `coupons:write` and broadcasts `broadcasts:write` (the store
 | Result | Meaning | Do |
 | --- | --- | --- |
 | `already_exists` | The code exists with other terms | Ask: change that coupon, or pick another code |
-| `approval_required` | The change needs the owner's approval, which the store takes only in Telegram | The owner makes it in Telegram |
 | `confirmation_invalid` | Expired, already used, or other arguments | Call again without `confirmation` for a new preview; show it, and confirm only after the user agrees to it |
 | `changed` | The coupon changed after the preview | Show the fresh preview; confirm only if the user agrees again |
 | `daily_cap` | 20 coupon changes, or 3 broadcasts, in a day | Tell the user when `retry_after` frees it |
+| `no_subscribers` | No buyer has opted in to news | Tell the user; nothing was sent |
 | `store_suspended` | The store is suspended | Creating, widening and broadcasts wait; switching off still works |
 | `not_found` | No coupon with that code | Check with `list_coupons` |
 | `insufficient_scope` | The token lacks `coupons:write` or `broadcasts:write` | A Full token (setup skill) |

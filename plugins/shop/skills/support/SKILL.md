@@ -45,10 +45,13 @@ tool is available, load the setup skill. The ticket tools need `support:read`; r
 3. `body` is 1 to 4,000 characters. A longer reply is refused, never cut: shorten it with the user, or send
    two replies if they agree. Never shorten a reply without saying so.
 4. A reply with contact details (a link, an @mention, an email address or a phone number) needs the owner's
-   approval: the answer is `pending_approval`. Where the store refuses it with `approval_required`, the
-   owner sends it in Telegram with `/reply <ticket id> <text>`.
-5. The result says whether Telegram delivered the reply (`delivered`). When it is false, the reply is on the
-   ticket but did not reach the buyer (they may have blocked the bot).
+   approval: the answer is `pending_approval` (not an error, and not `done`). The buyer has not been sent
+   anything: the reply goes out only if the owner taps Approve in Telegram, and `get_approval(approval_id)`
+   then holds `delivered` in its `result`. Do not send a second, shorter or reworded reply to get past the
+   approval; if the user wants a reply without contact details, they ask for it.
+5. The result of a sent reply has `ticket_id`, `status` (`answered`: the ticket now waits for the buyer) and
+   `delivered`: true when Telegram took the reply, false when the reply is on the ticket but may not have
+   reached the buyer (they may have blocked the bot), null when that is not known.
 6. Limits: 50 replies per token and 10 per ticket a day (`daily_cap`); a closed ticket takes no reply
    (`ticket_closed`).
 
@@ -57,8 +60,9 @@ private chat with the store bot.
 
 ## Close
 
-`close_ticket(ticket_id)` closes the ticket and tells the buyer. Close only when the user asks. An already
-closed ticket answers `noop`, with no second notice.
+`close_ticket(ticket_id)` closes the ticket and tells the buyer; the buyer can no longer reply to it. Close
+only when the user asks. The result's `notified` says whether the buyer was told (null when not known). An
+already closed ticket answers `noop`, with no second notice.
 
 ## Restore downloads
 
@@ -66,7 +70,10 @@ closed ticket answers `noop`, with no second notice.
   them; `downloads` is 1 to 20, or null for the store's default. Check the order with `get_order(order_id)`
   first: a refunded order is refused.
 - Restore only the order the user named. At most 3 restores per order a day, across all tokens
-  (`daily_cap`). The result never names the buyer.
+  (`daily_cap`). The result has `files` restored, `downloads` (each file has at least that many left),
+  the new `expires_at` and `notified`, whether whoever holds the files was told; `gift_unredeemed` true
+  means a gift's link is not redeemed yet, so nobody is told and the recipient gets the downloads with the
+  link. It never names the buyer.
 - Refunds are never available through the API: the owner handles them in Telegram (orders skill).
 
 ## If it fails
@@ -77,7 +84,6 @@ closed ticket answers `noop`, with no second notice.
 | `not_found` | No ticket or order with that id | List the tickets, or check the order id |
 | `ticket_closed` | The ticket is closed | Tell the user; the buyer can open a new ticket |
 | `invalid_arguments` | A reply over 4,000 characters, say | Shorten it with the user |
-| `approval_required` | The reply has contact details, and the store takes approvals only in Telegram | The owner sends it with `/reply` |
 | `daily_cap` | The reply or restore limit for the day | Tell the user when `retry_after` frees it |
 | `invalid_request` | The store refused, for example a refunded order | Report the message |
 

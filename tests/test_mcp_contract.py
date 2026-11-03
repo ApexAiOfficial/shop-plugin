@@ -2,8 +2,8 @@
 
 Skills write a tool call as ``tool_name(arg, arg)`` with argument names only. A name in an "MCP tool" table
 column must be a contract tool; a call's arguments must be that tool's input properties and include every
-required one. Tools the skills already teach but the vendored contract does not have yet are listed in
-PENDING_TOOLS below, which the next contract sync must empty.
+required one. The vendored contract is the store's final one: every tool the skills teach is in it, and
+PENDING_TOOLS is empty (a skill may only name a tool the contract has).
 """
 
 from __future__ import annotations
@@ -28,44 +28,21 @@ def _pending(scope: str | None, inputs: list[str], required: list[str], *, read:
 
 
 # ---------------------------------------------------------------------------------------------------------
-# PENDING CONTRACT SYNC. THE NEXT CONTRACT SYNC MUST EMPTY THIS LIST.
+# PENDING TOOLS. EMPTY: THE VENDORED CONTRACT HAS EVERY TOOL THE SKILLS TEACH.
 #
-# The skills already teach the store's whole write surface (approvals, broadcasts, variants, bundles, file
-# requests and repricing included), but the vendored contract (the exact bytes
-# PENDING_CONTRACT_SHA256 pins) has the reads, the category, item and coupon writes, and the licence-key, support and download writes. Until the final
-# contract is synced, the tools below stand in for it, with the scope, inputs and required inputs the store's
-# API defines for them, so the argument checks still run.
-#
-# After `python tools/sync_contract.py <final merchant-mcp-v1.json>`:
-#   1. delete every entry the contract now has (test_pending_tools_are_not_in_the_contract fails until then);
-#   2. fix the skills for any tool, argument or result field the final contract names differently;
-#   3. the list should then be empty: test_pending_tools_are_emptied_by_the_next_sync fails while it is not
-#      and the contract's bytes differ from the pinned digest, whatever its api_revision says (the store can
-#      change its contract without moving the revision). A deliberate partial sync sets PENDING_CONTRACT_SHA256
-#      to the new MANIFEST.json digest, after checking every entry left below against the store's API.
+# While the skills run ahead of a contract sync, a tool the contract does not have yet may stand in here
+# (``_pending(scope, inputs, required)``, from the store's API) so the argument checks still run.
+# test_no_tool_is_pending fails until the entry is removed, so a release never ships a skill that teaches a
+# tool the vendored contract lacks; once the synced contract has the tool, delete it from this dict.
 # ---------------------------------------------------------------------------------------------------------
-PENDING_CONTRACT_SHA256 = "672344cc7fdc31ae452e77ccf894cf384214df9fc05c693529271b32d8463950"
-PENDING_TOOLS: dict[str, dict] = {
-    # Approvals, broadcasts, variants, bundles, file requests and repricing
-    "get_approval": _pending(None, ["approval_id"], ["approval_id"], read=True),
-    "send_broadcast": _pending("broadcasts:write", ["text"], ["text"]),
-    "cancel_broadcast": _pending("broadcasts:write", ["broadcast_id"], ["broadcast_id"]),
-    "add_variant": _pending("catalog:write", ["item_id", "label", "price_stars"], ["item_id", "label", "price_stars"]),
-    "update_variant": _pending("catalog:write", ["variant_id", "version", "label", "price_stars", "note", "active"],
-                               ["variant_id"]),
-    "create_bundle": _pending("catalog:write", ["category_id", "title", "price_stars"],
-                              ["category_id", "title", "price_stars"]),
-    "update_bundle": _pending("catalog:write", ["bundle_id", "add_item_id", "remove_item_id"], ["bundle_id"]),
-    "request_product_file": _pending("catalog:write", ["item_id", "variant_id"], ["item_id"]),
-    "reprice_items": _pending("catalog:write", ["changes", "confirmation"], ["changes"]),
-}
+PENDING_TOOLS: dict[str, dict] = {}
 
 #: What the contract's schema does not encode (its tool descriptions say it in prose), as the overview's tool
 #: table must state it: the tools that also need pricing:write, and those a change can send for the owner's
 #: approval.
 PRICING_TOOLS = {"create_item", "update_item", "add_variant", "update_variant", "create_bundle", "reprice_items"}
-APPROVAL_TOOLS = {"update_item", "update_variant", "reprice_items", "create_coupon", "update_coupon", "reply_ticket",
-                  "send_broadcast"}
+APPROVAL_TOOLS = {"update_item", "add_variant", "update_variant", "reprice_items", "create_coupon", "update_coupon",
+                  "reply_ticket", "send_broadcast"}
 
 #: Every answer of a tool that changes the store (the write envelope).
 ENVELOPE = ["status", "replayed", "noop", "result", "confirmation", "approval", "effect", "next"]
@@ -220,7 +197,7 @@ def test_two_step_tools_are_shown_with_their_confirmation_call() -> None:
 
 
 def test_the_overview_table_gives_every_tool_its_scope_and_level() -> None:
-    """The shop skill's tool table agrees with the contract (and, until the sync, with PENDING_TOOLS)."""
+    """The shop skill's tool table agrees with the contract."""
     text = (SKILLS_DIR / "shop" / "SKILL.md").read_text(encoding="utf-8")
     [table] = [table for table in _tables(text) if table and {"MCP tool", "Scope", "Level"} <= set(table[0])]
     rows: dict[str, dict[str, str]] = {}
@@ -242,20 +219,10 @@ def test_the_overview_table_gives_every_tool_its_scope_and_level() -> None:
         assert ("approval" in level) == (name in APPROVAL_TOOLS), f"{name}: level {level!r}"
 
 
-def test_pending_tools_are_not_in_the_contract() -> None:
-    """A synced tool is checked against the contract itself: take it out of PENDING_TOOLS."""
-    synced = sorted(set(PENDING_TOOLS) & set(TOOLS))
-    assert not synced, (f"contracts/merchant-mcp-v1.json now has {synced}: delete them from PENDING_TOOLS in "
-                        "tests/test_mcp_contract.py, and fix the skills where the contract differs")
-
-
-def test_pending_tools_are_emptied_by_the_next_sync() -> None:
-    """Pinned to the contract's bytes, not its api_revision: the store can change its contract within a revision."""
-    digest = load_json(ROOT / "contracts" / "MANIFEST.json")["files"]["merchant-mcp-v1.json"]["sha256"]
-    assert not PENDING_TOOLS or digest == PENDING_CONTRACT_SHA256, (
-        f"the contract was synced (sha256 {digest[:12]}), but PENDING_TOOLS still lists {sorted(PENDING_TOOLS)}: "
-        "every skill tool must be in the synced contract. Empty PENDING_TOOLS (or, for a deliberate partial sync, "
-        "check every entry left and set PENDING_CONTRACT_SHA256 to the new digest)")
+def test_no_tool_is_pending() -> None:
+    """The contract is final: a skill teaches only tools it has, and each is checked against the contract itself."""
+    assert not PENDING_TOOLS, (f"PENDING_TOOLS lists {sorted(PENDING_TOOLS)}: sync the final contract with "
+                               "tools/sync_contract.py and delete the entries, so the skills are checked against it")
 
 
 def test_the_parser_finds_what_it_should() -> None:
@@ -330,21 +297,30 @@ RESULT_FIELDS = {
     "delete_category": [*ENVELOPE, "summary", "details", "id", "expires_at"],
     "list_coupons": ["data", "next_cursor", "code", "pct_off", "is_active", "max_uses", "per_user_max_uses",
                      "expires_at", "created_at", "uses", "paid", "open_checkouts"],
-    # Pending (see PENDING_TOOLS): checked once the contract has the tool.
     "get_item_stock": ["voidable", "holds"],
+    "add_variant": [*ENVELOPE, "id", "item_id", "label", "price_stars", "is_active", "file_status", "licence_note",
+                    "version"],
+    "update_variant": [*ENVELOPE, "id", "item_id", "label", "price_stars", "is_active", "file_status",
+                       "licence_note", "version"],
+    "create_bundle": [*ENVELOPE, "publish_blocker", "bundle", "version"],
+    "update_bundle": [*ENVELOPE, "warning", "publish_blocker", "bundle", "version"],
+    "request_product_file": [*ENVELOPE, "sent", "item_id", "variant_id"],
+    "reprice_items": [*ENVELOPE, "items", "item_id", "price_stars", "version", "changed"],
+    "send_broadcast": [*ENVELOPE, "id", "status", "recipients", "pending", "sent", "failed", "blocked", "skipped"],
+    "cancel_broadcast": [*ENVELOPE, "id", "status", "recipients", "pending", "sent", "failed", "blocked", "skipped"],
+    "close_ticket": [*ENVELOPE, "ticket_id", "status", "notified"],
+    "restore_downloads": [*ENVELOPE, "files", "downloads", "expires_at", "gift_unredeemed", "notified"],
     "stage_key_import": ["staged_import", "id", "expires_at", "keys", "would_add", "duplicates", "too_long",
                          "available_now", "available_after", "turns_on_key_delivery", "members_only", "comma_lines",
                          "hidden"],
-    "reply_ticket": [*ENVELOPE, "delivered"],
-    "get_approval": ["id", "operation", "target", "status", "effect", "expires_at", "created_at", "decided_at",
-                     "result", "error"],
+    "reply_ticket": [*ENVELOPE, "ticket_id", "status", "delivered"],
+    "get_approval": ["id", "operation", "target", "status", "reasons", "effect", "expires_at", "created_at",
+                     "decided_at", "result", "error"],
 }
 
 
 @pytest.mark.parametrize("tool", sorted(RESULT_FIELDS))
 def test_the_result_fields_the_skills_read_exist(tool: str) -> None:
-    if tool in PENDING_TOOLS:
-        pytest.skip(f"{tool} is pending a contract sync (PENDING_TOOLS)")
     schema = TOOLS[tool]["outputSchema"]
     properties = set(schema.get("properties", {}))
     for definition in schema.get("$defs", {}).values():
@@ -353,11 +329,9 @@ def test_the_result_fields_the_skills_read_exist(tool: str) -> None:
     assert not missing, f"{tool} no longer returns {missing}"
 
 
-def test_variant_rows_carry_their_own_version_once_update_variant_is_synced() -> None:
+def test_variant_rows_carry_their_own_version() -> None:
     """The catalog skill sends a variant's own `version` (from its row in get_item) to update_variant. The
     merged result-field check above cannot see that: the item-level `version` would satisfy it."""
-    if "update_variant" in PENDING_TOOLS:
-        pytest.skip("update_variant is pending a contract sync (PENDING_TOOLS)")
     variant = TOOLS["get_item"]["outputSchema"]["$defs"]["ItemVariant"]
     assert "version" in variant["properties"], "get_item's variant rows have no version for update_variant"
 
