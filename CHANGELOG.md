@@ -3,7 +3,7 @@
 All notable changes to this plugin are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-11-04)
 
 The plugin covers the store's API revision 2026-11-05: review moderation and responses, custom-order requests,
 membership plans and version labels. As before, the store lists the tools a token allows and enforces every
