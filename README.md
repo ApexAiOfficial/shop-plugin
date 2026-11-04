@@ -54,6 +54,9 @@ the store, not the plugin, enforces confirmations, approvals and daily limits.
 - Claude Code 2.1 or later.
 - A Shop Bot store on the Business plan with the merchant API on. If `/apitoken` in your store bot says the API
   is not available, write to support@apexaiofficial.com.
+
+**Availability (2026-11-04):** no ApexAi-operated store serves the merchant API yet. A store needs Shop Bot 0.8.0
+or later (not yet released) with the merchant API switched on. Until then, this plugin has nothing to connect to.
 - An API token: only the store's owner can create one.
 
 ## Install
@@ -81,6 +84,8 @@ To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.1
      categories, membership plan prices and switches, version labels, and licence-key imports;
    - **Full:** everything, buyer Telegram ids, coupons, broadcasts, review moderation and custom-order
      questions and rejections included.
+
+   Refunds are never available through the API, with any token.
 
    Pick the smallest preset that does the job, and an expiry. The bot shows the token once, with a copy
    button, and the store's MCP address. Tokens created before your store took changes through the API stay

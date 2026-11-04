@@ -73,11 +73,19 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `clarify_custom_order(request_id, question, confirmation)` | Ask the buyer a question; they are messaged at once | `custom_orders:write` | two-step; approval with contact details |
 | `reject_custom_order(request_id, reason, confirmation)` | Reject a request with a reason; the buyer is told at once, for good | `custom_orders:write` | two-step; approval with contact details |
 
-The owner creates the token from a preset (Read-only, Support, Catalog and stock, Full) or picks its scopes;
-each preset's scopes, and what an older token lacks: `references/limits.md`. Without `customers:read`, buyer
-ids come back as `null`. A change the store does not offer yet is not listed for any token, and when changes
-through the API are off for the store, no change tool is listed at all: only reads work, and a new token does
-not help (ApexAi support can say why).
+The store bot's token presets: **Read-only** has catalog, stock, orders, reports, coupons, reviews and
+custom orders, and changes nothing; **Support** has `catalog:read`, `orders:read`, `support:read`,
+`support:write` and `fulfillment:write` (no buyer ids, coupons, catalog changes, review moderation or
+custom-order replies); **Catalog and stock** is Read-only plus `catalog:write`, `pricing:write` and
+`inventory:write`; **Full** has every scope, including `customers:read` (buyer Telegram ids, and
+`list_orders` with `buyer`), `coupons:write`, `broadcasts:write`, `reviews:write` and
+`custom_orders:write`. The owner can also pick scopes one by one. Each preset's scopes, and what an older
+token lacks: `references/limits.md`. Without `customers:read`, buyer ids come back as `null`. A token
+created before the store took changes through the API has no write scope, and one created before reviews
+and custom orders lacks those scopes: the owner creates a new one. A change the store does not offer yet
+is not listed for any token, and when changes through the API are off for the store, no change tool is
+listed at all, whatever the scopes: only reads work, and a new token does not help (ApexAi support can say
+why). Refunds are never available through the API.
 
 ## Pick the skill
 
