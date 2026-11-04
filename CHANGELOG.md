@@ -3,7 +3,7 @@
 All notable changes to this plugin are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [SemVer](https://semver.org/).
 
-## Unreleased: 0.2.0
+## 0.2.0 (2026-11-04)
 
 The plugin now administers the store, not just reads it: the skills drive the store's write tools, with the
 store's confirmations and Telegram approvals. Nothing to configure; the store lists the tools a token allows.
