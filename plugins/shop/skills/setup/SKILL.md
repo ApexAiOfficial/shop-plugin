@@ -14,8 +14,8 @@ When it is connected, `get_store` answers; when it is not, no shop tool is liste
    `/apitoken` lists tokens; if it says the API is not available for the store, ApexAi support can help
    (support@apexaiofficial.com).
 2. A token: send `/apitoken new <name>` (for example `/apitoken new Claude laptop`) in that private chat.
-   Pick **Read-only** for reports, catalog, stock and orders, or **Operations** to also read support
-   tickets and buyer ids. The bot shows the token once, with a copy button, and the store's MCP address
+   Pick **Read-only** for reports, catalog, stock and orders; **Support** to also read support tickets;
+   or **Full** for buyer ids too. The bot shows the token once, with a copy button, and the store's MCP address
    (ending in `/api/merchant/v1/mcp`). Only the store owner can create tokens.
 3. The user enters both in Claude Code, never in this chat: `/plugin configure shop@shop-plugin`, then
    `/reload-plugins`. The token is a sensitive setting, entered in a masked field and kept in Claude Code's
@@ -38,7 +38,7 @@ When it is connected, `get_store` answers; when it is not, no shop tool is liste
 | `token_expired` or `token_revoked` | The token stopped working | The owner creates a new one with `/apitoken new <name>` |
 | `token_inactive` | Its creator no longer owns the store | The current owner creates a token |
 | 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
-| A tool is missing | The token's preset does not include its scope | An Operations token adds support tickets and buyer ids |
+| A tool is missing | The token's preset does not include its scope | A Support token adds support tickets; a Full token also adds buyer ids |
 
 Other codes: `../shop/references/errors.md`.
 

@@ -37,7 +37,7 @@ tool is available, load the setup skill.
 
 | Result | Meaning | Do |
 | --- | --- | --- |
-| `insufficient_scope` with `buyer` | The token lacks `customers:read` | Search by period instead, or use an Operations token |
+| `insufficient_scope` with `buyer` | The token lacks `customers:read` | Search by period instead, or use a Full token |
 | `not_found` | No order with that id | Check the id with `list_orders` |
 | `window_too_long` | More than 92 days | Split the period |
 

@@ -7,7 +7,7 @@ description: This skill should be used when the user asks "what support tickets 
 
 **Route.** Use the `shop` MCP tools (Claude Code shows them as `mcp__plugin_shop_shop__<tool>`). If no shop
 tool is available, load the setup skill. The ticket tools need a token with `support:read` (the store bot's
-Operations preset).
+Support or Full preset).
 
 | Step | MCP tool |
 | --- | --- |
@@ -35,7 +35,7 @@ Operations preset).
 
 | Result | Meaning | Do |
 | --- | --- | --- |
-| The ticket tools are not listed | The token lacks `support:read` | The owner creates an Operations token (setup skill) |
+| The ticket tools are not listed | The token lacks `support:read` | The owner creates a Support or Full token (setup skill) |
 | `not_found` | No ticket with that id | List the tickets |
 
 Other codes: `../shop/references/errors.md`.

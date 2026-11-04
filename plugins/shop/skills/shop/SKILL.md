@@ -28,9 +28,13 @@ Claude Code shows them as `mcp__plugin_shop_shop__<tool>`. A token sees only the
 | `list_tickets(include_closed, limit)` | Support tickets, open ones first | `support:read` |
 | `get_ticket(ticket_id)` | One ticket's thread with author labels | `support:read` |
 
-The store bot's token presets: **Read-only** has catalog, stock, orders, reports and coupons;
-**Operations** adds `customers:read` (buyer Telegram ids, and `list_orders` with `buyer`) and
-`support:read` (the ticket tools). Without `customers:read`, buyer ids come back as `null`.
+The store bot's token presets:
+- **Read-only** has catalog, stock, orders, reports and coupons.
+- **Support** has catalog, orders and `support:read` (the ticket tools), with no buyer ids.
+- **Catalog and stock** is Read-only plus write scopes this plugin version does not use.
+- **Full** has everything, including `customers:read` (buyer Telegram ids, and `list_orders` with `buyer`).
+
+Without `customers:read`, buyer ids come back as `null`. Refunds are never available through the API.
 
 ## Pick the skill
 

@@ -6,8 +6,8 @@ MCP server with an API token you create in Telegram, and every one of its 12 too
 
 ## Configure
 
-1. In a private chat with your store bot, send `/apitoken new Claude` and pick Read-only or Operations (adds
-   support tickets and buyer ids). Copy the token and the MCP address the bot shows.
+1. In a private chat with your store bot, send `/apitoken new Claude` and pick Read-only, Support (adds
+   support tickets) or Full (also buyer ids). Copy the token and the MCP address the bot shows.
 2. Run `/plugin configure shop@shop-plugin`, enter the address and the token, then `/reload-plugins`.
 3. Ask "Check my shop connection."
 

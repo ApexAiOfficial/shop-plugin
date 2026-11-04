@@ -48,6 +48,9 @@ The store decides what the token may read: a tool your token's scopes do not all
 - Claude Code 2.1 or later.
 - A Shop Bot store on the Business plan with the merchant API on. If `/apitoken` in your store bot says the API
   is not available, write to support@apexaiofficial.com.
+
+**Availability (2026-11-04):** no ApexAi-operated store serves the merchant API yet. A store needs Shop Bot 0.8.0
+or later (not yet released) with the merchant API switched on. Until then, this plugin has nothing to connect to.
 - An API token: only the store's owner can create one.
 
 ## Install
@@ -68,7 +71,12 @@ To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.1
 
 1. In a private chat with your store bot, send `/apitoken new Claude` (any name). Choose:
    - **Read-only:** sales, catalog, stock, orders and payments;
-   - **Operations:** the same, plus support tickets and buyer Telegram ids.
+   - **Support:** catalog and orders, plus support tickets (no buyer Telegram ids);
+   - **Catalog and stock:** Read-only, plus the right to change the catalog, prices and stock. This plugin
+     version only reads, so it adds nothing here;
+   - **Full:** everything, including buyer Telegram ids.
+
+   Refunds are never available through the API, with any token.
 
    Pick an expiry. The bot shows the token once, with a copy button, and the store's MCP address.
 2. In Claude Code, run `/plugin configure shop@shop-plugin` and enter:
@@ -130,7 +138,7 @@ ids and tokens are never returned.
 | No shop tools in the session | The plugin is not configured | `/plugin configure shop@shop-plugin`, then `/reload-plugins` |
 | `/mcp` shows `shop` failed, 401 | Wrong token, or it expired or was revoked | Create a new token with `/apitoken new <name>` and configure it |
 | `/mcp` shows `shop` failed, 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
-| A tool you expected is missing | The token's preset does not include its scope | Create an Operations token |
+| A tool you expected is missing | The token's preset does not include its scope | Create a Support token (tickets) or a Full token (buyer ids) |
 | `rate_limited` | Too many calls in a short time | Wait the `retry_after` seconds |
 | `window_too_long` | Orders span at most 92 days per call | Ask for shorter periods |
 
@@ -148,8 +156,8 @@ The plugin contacts nothing else, and sends no telemetry.
 
 - The token is sent only to the address you configure, as a bearer header.
 - Tool results go into your Claude Code conversation, so they reach the AI provider your Claude Code uses (for
-  example Anthropic). With an Operations token that includes support ticket text and buyer Telegram ids. Choose
-  the Read-only preset if you do not want that.
+  example Anthropic). With a Support token that includes support ticket text, and with a Full token, buyer
+  Telegram ids too. Choose the Read-only preset if you do not want that.
 - The store records each token's first use, and every buyer lookup (a buyer filter, or a ticket that shows its
   buyer), in its audit log.
 

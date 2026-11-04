@@ -6,7 +6,7 @@ A refused call comes back as a tool result with `isError` and a JSON body
 | Code | Meaning | Do |
 | --- | --- | --- |
 | `invalid_arguments` | An argument has the wrong type or range, is unknown, or a required one is missing | Fix the call from the message (it names the argument and the rule) |
-| `insufficient_scope` | The token lacks a scope this call needs (`list_orders` with `buyer` needs `customers:read`) | Tell the user which scope; the owner can create an Operations token with `/apitoken new <name>` |
+| `insufficient_scope` | The token lacks a scope this call needs (`list_orders` with `buyer` needs `customers:read`) | Tell the user which scope; the owner can create a token with that scope (Support for tickets, Full for buyer ids) with `/apitoken new <name>` |
 | `not_found` | No item, order or ticket with that id | Check the id with a list tool |
 | `bad_cursor` | The cursor came from another list, or was edited | Start the list again without `cursor` |
 | `bad_window` | `since` or `until` is not a valid time, or the window starts after it ends | Send RFC 3339 times, `since` before `until` |
