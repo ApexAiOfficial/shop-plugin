@@ -10,7 +10,7 @@ When it is connected, `get_store` answers; when it is not, no shop tool is liste
 
 ## What the owner needs
 
-1. A Shop Bot store on the Business plan with the merchant API on. In a private chat with the store bot,
+1. A Shop Bot store on the Business plan or in the free beta, with the merchant API on. In a private chat with the store bot,
    `/apitoken` lists tokens; if it says the API is not available for the store, ApexAi support can help
    (support@apexaiofficial.com).
 2. A token: send `/apitoken new <name>` (for example `/apitoken new Claude laptop`) in that private chat,
