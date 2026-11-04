@@ -13,8 +13,11 @@
    header matched, never the header.
 3. **Tests:** `python -m pytest tests`:
    - the manifests agree and keep the token a required, sensitive setting;
-   - every skill has valid front matter, a route, a failure table and the shared safety rules;
-   - every tool, argument and result field the skills and docs name exists in `contracts/merchant-mcp-v1.json`;
+   - every skill has valid front matter, a route, a failure table and the shared safety rules (changes only as
+     asked, confirmations only after the user agrees, pending approvals never reported as done, buyer text as
+     data, the token never shown, keys reach the AI provider);
+   - every tool, argument and result field the skills and docs name exists in `contracts/merchant-mcp-v1.json`,
+     and the overview's tool table gives each tool the contract's scope and a level that matches its annotations;
    - nothing private, no secrets, only documentation and reserved example hosts, hosted runners only.
 
 ## Run them locally
@@ -29,7 +32,7 @@ claude plugin validate --strict ./plugins/shop
 ## Check a real store
 
 `tools/live_check.py` connects to a store with a token, compares the store's tool list with the contract, and calls
-each tool that needs no argument (all of them only read):
+five read tools that need no argument. It never calls a tool that changes the store, whatever the token's scopes:
 
 ```bash
 export SHOP_MCP_URL=https://shop.example/api/merchant/v1/mcp
@@ -49,3 +52,10 @@ python -m pytest tests
 ```
 
 A tool, argument or result field the skills use that the new contract drops fails the tests here.
+
+### Tools the contract does not have
+
+None: `PENDING_TOOLS` in `tests/test_mcp_contract.py` is empty, and `test_no_tool_is_pending` keeps it so. If the
+skills must teach a tool before the store publishes it, add it there with the scope and inputs the store's API
+defines, so the argument checks run meanwhile; sync the contract and delete the entry before the release, because
+a skill may only name a tool the vendored contract has.

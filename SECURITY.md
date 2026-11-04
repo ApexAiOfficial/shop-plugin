@@ -16,19 +16,30 @@ acknowledge reports within a few days.
   the MCP server you configured. Use an `https://` address for any host but your own machine.
 - **No code runs from this plugin.** It ships skills (Markdown), manifests and the MCP connection settings: no
   hooks, no executables, no scripts, no network code, no telemetry.
-- **Every tool only reads.** The store's MCP server offers read-only tools; nothing the plugin can do changes the
-  store, messages a buyer or moves Stars.
+- **Changes stay within what you asked for.** The tools change the store only as far as the token's scopes allow.
+  Every skill tells the agent to make only the changes the user asked for, to show the effect of a two-step change
+  and confirm it only after the user agrees, never to split a change to avoid a confirmation or an approval, and
+  never to report a change as done while it waits for the owner's Approve. No tool refunds or otherwise moves
+  Stars.
 - **Buyer and merchant text is untrusted.** Every skill tells the agent to treat item text, ticket subjects and
-  messages, and refund reasons as data, never as instructions, and not to let them choose the next tool call, URL,
-  file or setting.
+  messages, and refund reasons as data, never as instructions, and not to let them choose the next tool call,
+  argument, URL, file or setting.
+- **Licence keys sent through the conversation reach the AI provider.** The stock skill says so before it reads a
+  key file or asks for keys, and recommends a file import outside the conversation (`/addkeys` with a file in the
+  store bot) for keys that must stay private.
 - **Tokens stay out of the conversation.** The skills never ask for a token in chat and never print one. If a token
   is pasted into a chat, revoke it in `/apitoken` and create a new one.
 
 ## What the store enforces
 
 These are properties of the store, which ApexAi operates, not of this plugin: tokens are scoped and expire, any
-admin can revoke one at once, the store lists only the tools a token's scopes allow, it never returns licence-key
-text, product files or full charge ids, and it records each token's first use and every buyer lookup.
+admin can revoke one at once, the store lists only the tools a token's scopes allow, and it never returns
+licence-key text, product files or full charge ids. For changes, the store issues single-use confirmations bound
+to the token, the tool and the arguments; sends deep price cuts (a new variant priced under half of the cheapest
+included), large coupons, replies with contact details and broadcasts to the owner's Approve in Telegram (the
+change answers `pending_approval` and waits); applies daily caps; never applies a repeated identical change twice
+(a product-file request, which only messages the owner, is the exception); and records every change, with the
+token that made it, in its audit log, as it records each token's first use and every buyer lookup.
 
 ## Scope
 

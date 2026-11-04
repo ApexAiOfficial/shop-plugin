@@ -21,7 +21,14 @@ bearer_token_env_var = "SHOP_API_TOKEN"
 
 Start Codex from the shell where `SHOP_API_TOKEN` is set, and check with `/mcp`. The skills in
 `plugins/shop/skills/` are plain Agent Skills: copy the folders you want into `~/.codex/skills/` to give Codex the
-same guidance. They name the tools without a host's prefix (`get_store`).
+same guidance, the safety rules for changes included. They name the tools without a host's prefix (`get_store`).
+
+## Changes from any client
+
+The store enforces scopes, confirmations, approvals and daily caps itself, so they hold in every client. Two-step
+tools answer `status` `confirmation_required` first, and changes that need the owner's Approve answer
+`pending_approval`; check those with `get_approval`. Keep your client asking before it runs tools marked
+`destructiveHint`, and give an agent the smallest token preset its task needs.
 
 ## Claude Desktop and claude.ai
 

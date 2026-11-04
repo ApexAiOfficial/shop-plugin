@@ -5,9 +5,10 @@
     python tools/live_check.py
 
 It runs ``initialize`` and ``tools/list``, checks that every listed tool is in contracts/merchant-mcp-v1.json
-with the same definition, then calls each listed tool that needs no argument and reports whether it answered.
-Every tool only reads, so nothing in the store changes. The token travels only in the Authorization header
-and is never printed; answers are summarized, never shown.
+with the same definition, then calls the listed read tools that need no argument and reports whether they
+answered. It never calls a tool that changes the store, even with a write token: a tool in NO_ARGUMENT_TOOLS
+is called only when the store lists it exactly as the contract defines it and marks it read-only. The token
+travels only in the Authorization header and is never printed; answers are summarized, never shown.
 """
 
 from __future__ import annotations
@@ -54,6 +55,24 @@ class Store:
         return answer["result"]
 
 
+def tools_to_call(contract: dict[str, dict], listed: dict[str, dict]) -> tuple[list[str], list[str]]:
+    """(the NO_ARGUMENT_TOOLS to call, problems). A tool is called only when the store lists it with exactly the
+    contract's definition and the listing itself marks it read-only; anything else is reported, never called."""
+    calls: list[str] = []
+    problems: list[str] = []
+    for name in NO_ARGUMENT_TOOLS:
+        tool = listed.get(name)
+        if tool is None:
+            continue
+        if contract.get(name) != tool:
+            problems.append(f"{name}: differs from the contract, not called")
+        elif tool.get("annotations", {}).get("readOnlyHint") is not True:
+            problems.append(f"{name}: not read-only, not called")
+        else:
+            calls.append(name)
+    return calls, problems
+
+
 def main() -> int:
     """Exit 0 when the store's tools match the contract and every no-argument tool answers."""
     url, token = os.environ.get("SHOP_MCP_URL", ""), os.environ.get("SHOP_API_TOKEN", "")
@@ -68,10 +87,10 @@ def main() -> int:
     listed = store.rpc("tools/list")["tools"]
     problems = [f"{tool['name']}: not in the contract or changed" for tool in listed if contract.get(tool["name"]) != tool]
     print(f"{len(listed)} tools listed for this token; {len(listed) - len(problems)} match the contract")
-    names = {tool["name"] for tool in listed}
-    for name in NO_ARGUMENT_TOOLS:
-        if name not in names:
-            continue
+    calls, refused = tools_to_call(contract, {tool["name"]: tool for tool in listed})
+    # A changed no-argument tool is already reported above; add only the refusals that say more.
+    problems += [p for p in refused if not p.endswith("differs from the contract, not called")]
+    for name in calls:
         result = store.rpc("tools/call", {"name": name, "arguments": {}})
         verdict = "error " + json.loads(result["content"][0]["text"]).get("error", "?") if result.get("isError") else "ok"
         print(f"  {name}: {verdict}")

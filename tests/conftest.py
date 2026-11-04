@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "shop"
 SKILLS_DIR = PLUGIN / "skills"
 SKILLS = sorted(path.parent.name for path in SKILLS_DIR.glob("*/SKILL.md"))
-EXPECTED_SKILLS = ["catalog", "orders", "sales", "setup", "shop", "store-health", "support"]
+EXPECTED_SKILLS = ["catalog", "coupons", "orders", "sales", "setup", "shop", "stock", "store-health", "support"]
 CONTRACT = ROOT / "contracts" / "merchant-mcp-v1.json"
 
 #: Every Markdown file a user or an agent reads: the skills and their references, the READMEs and the docs.

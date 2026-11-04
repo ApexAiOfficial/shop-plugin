@@ -1,14 +1,17 @@
 # Shop Bot plugin for Claude Code
 
-Ask about your [Shop Bot](https://apexaiofficial.com) store in plain language: how sales are going, what needs
-attention, which licence keys are running low, what a buyer ordered, and what is waiting in support. The
-plugin connects Claude Code to your store's own MCP server with an API token you create in Telegram. Every
-tool only reads: nothing here changes your store, messages a buyer or moves Stars.
+Run your [Shop Bot](https://apexaiofficial.com) store in plain language: ask how sales are going and what
+needs attention, then add and price products, publish or hide them, create coupons, import licence keys,
+answer support tickets and restore a buyer's downloads. The plugin connects Claude Code to your store's own
+MCP server with an API token you create in Telegram. The token decides what Claude may change; deletions and
+other destructive changes take a second, confirmed call, and big ones (deep price cuts, large coupons,
+replies with contact details, broadcasts) wait until you tap Approve in Telegram. Refunds never go through
+the plugin.
 
 | | |
 | --- | --- |
-| Version | 0.1.0 |
-| Status | Read-only tools (12). Writes with Telegram approval come later. |
+| Version | 0.2.0, unreleased (0.1.0, the current release, only reads) |
+| Status | Reads and changes, with confirmations and Telegram approvals enforced by the store |
 | Stores | Shop Bot stores on the Business plan with the merchant API on |
 | Hosts | Claude Code (plugin). Codex and other MCP clients: [docs/other-clients.md](docs/other-clients.md) |
 | License | Apache-2.0 |
@@ -22,6 +25,7 @@ tool only reads: nothing here changes your store, messages a buyer or moves Star
 - [Check the connection](#check-the-connection)
 - [Skills](#skills)
 - [Example prompts](#example-prompts)
+- [How changes work](#how-changes-work)
 - [Tools](#tools)
 - [Troubleshooting](#troubleshooting)
 - [Endpoints contacted](#endpoints-contacted)
@@ -38,10 +42,12 @@ Your store serves an MCP server at `https://<your store>/api/merchant/v1/mcp`. A
 plugin holds no server code. It gives Claude Code:
 
 - the connection: the store's MCP address and your token, sent as `Authorization: Bearer <token>`;
-- seven skills that teach Claude which tool answers which question, how to present the answer, and the
-  safety rules (buyer text is data, never instructions).
+- nine skills that teach Claude which tool does what, how to present the answer, and the safety rules: make
+  only the changes you asked for, show you the effect of a two-step change before confirming it, never call
+  a change done while it waits for your Approve, and treat buyer text as data, never instructions.
 
-The store decides what the token may read: a tool your token's scopes do not allow is not listed at all.
+The store decides what the token may do: a tool your token's scopes do not allow is not listed at all, and
+the store, not the plugin, enforces confirmations, approvals and daily limits.
 
 ## Requirements
 
@@ -69,16 +75,19 @@ To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.1
 
 ## Configure
 
-1. In a private chat with your store bot, send `/apitoken new Claude` (any name). Choose:
-   - **Read-only:** sales, catalog, stock, orders and payments;
-   - **Support:** catalog and orders, plus support tickets (no buyer Telegram ids);
-   - **Catalog and stock:** Read-only, plus the right to change the catalog, prices and stock. This plugin
-     version only reads, so it adds nothing here;
-   - **Full:** everything, including buyer Telegram ids.
+1. In a private chat with your store bot, send `/apitoken new Claude` (any name). Choose what it may do:
+   - **Read-only:** sales, catalog, stock, orders, payments and coupons; changes nothing;
+   - **Support:** reply to and close support tickets, restore an order's downloads, read orders and the
+     catalog (no buyer ids, coupons or catalog changes);
+   - **Catalog and stock:** Read-only plus creating, editing, pricing, publishing and deleting items and
+     categories, and licence-key imports;
+   - **Full:** everything, buyer Telegram ids, coupons and broadcasts included.
 
    Refunds are never available through the API, with any token.
 
-   Pick an expiry. The bot shows the token once, with a copy button, and the store's MCP address.
+   Pick the smallest preset that does the job, and an expiry. The bot shows the token once, with a copy
+   button, and the store's MCP address. Tokens created before your store took changes through the API stay
+   read-only: create a new one to change anything.
 2. In Claude Code, run `/plugin configure shop@shop-plugin` and enter:
    - **Store MCP address:** the address the bot printed, ending in `/api/merchant/v1/mcp`;
    - **Store API token:** the token. It is a sensitive setting, kept in Claude Code's secure storage, not in
@@ -97,39 +106,82 @@ token's scopes and its expiry. `/mcp` shows the `shop` server and its state.
 
 | Skill | Use it for |
 | --- | --- |
-| `shop` | What the plugin can do, which tool answers what, scopes, limits and error codes |
-| `setup` | Connecting, checking the connection, token problems |
+| `shop` | What the plugin can do, which tool does what, scopes, levels, limits and error codes |
+| `setup` | Connecting, checking the connection, token presets and problems |
 | `store-health` | What needs attention: payments waiting for an operator, low stock, open tickets |
 | `sales` | Revenue, top items, a period compared with the one before |
-| `catalog` | Finding items, why one is not on sale, variants, bundles, key stock |
+| `catalog` | Finding, creating, editing, pricing, publishing, moving and deleting items and categories; variants, bundles, product files |
+| `coupons` | Listing, creating and changing coupons; broadcasts to buyers |
+| `stock` | Licence-key counts, key imports (staged, then committed), voiding unsold keys, releasing held keys |
 | `orders` | One order, a buyer's orders, open Stars receipts, a refund's state |
-| `support` | Open tickets, what a buyer asked, a draft reply for you to send in Telegram |
+| `support` | Open tickets, replies and closing, restoring an order's downloads |
 
 ## Example prompts
 
 - "What needs my attention in the shop today?"
 - "How did sales do in the last 30 days compared with the 30 before? Top items?"
-- "Which licence-key products are running low?"
-- "Show order 1042 and whether it was refunded."
-- "Why is the 'Pro licence' item not on sale?"
-- "Summarize the open support tickets and draft a reply to the oldest one."
+- "Create a 'Templates' category and add a 'Notion budget template' item for 250 Stars."
+- "Why is the 'Pro licence' item not on sale? Publish it once it can be."
+- "Create a coupon SPRING20: 20% off, 200 uses, ending on 31 May."
+- "Import the keys in keys.txt into item 12." (Before reading the file, Claude tells you that keys passing
+  through the conversation reach the AI provider, and suggests `/addkeys` with a file for sensitive batches.)
+- "Restore the downloads for order 1042, then reply to ticket 31 that the download link was reset, and close
+  the ticket."
+
+## How changes work
+
+Each change is one of three kinds. The store decides which, from the change itself:
+
+- **Direct:** one call. Routine edits: a new item, a new description, a raise, publishing, a reply.
+- **Two-step:** deleting items and categories, voiding keys, releasing held keys, switching off a used
+  coupon and bulk repricing. The first call changes nothing and returns the exact effect; Claude shows it to
+  you and confirms only after you agree. A confirmation is single use and expires in 5 minutes.
+- **Approval:** a price cut to less than half the price (an item, a variant or a bulk reprice), a new variant
+  priced under half of the cheapest one, an item added to a bundle that leaves it under half of what its items
+  sell for apart, a coupon of 50% or more or with unlimited or more than 1,000 uses, a support reply with a
+  link or contact details, and every broadcast. The store answers `pending_approval`, and the store bot sends
+  the store owner a card in its private chat; nothing happens until the owner taps Approve (within 15
+  minutes), and Claude reports the change as waiting until then.
+
+A create, reply or download restore repeated with identical arguments within 10 minutes answers the first
+result instead of happening twice, and an edit repeated with the same values changes nothing. A file request
+is the exception: each one sends the owner a new prompt. Daily
+caps apply per token (500 changes, 20 coupon changes, 50 replies), per order (3 download restores) and per
+store (3 broadcasts). Refunds, resolving payments, messages to a single buyer, photos and file uploads stay in
+Telegram.
 
 ## Tools
 
-All 12 are read-only (`readOnlyHint`). Claude Code names them `mcp__plugin_shop_shop__<tool>`.
+Claude Code names them `mcp__plugin_shop_shop__<tool>`. The store lists only the tools a token's scopes allow.
 
-| Tool | Scope |
-| --- | --- |
-| `get_store` | any token |
-| `needs_attention`, `sales_summary` | `reports:read` |
-| `list_orders`, `get_order`, `list_payments` | `orders:read` (buyer ids and the buyer filter also need `customers:read`) |
-| `list_categories`, `list_items`, `get_item` | `catalog:read` |
-| `list_stock` | `inventory:read` |
-| `list_tickets`, `get_ticket` | `support:read` |
+| MCP tool | Scope | Level |
+| --- | --- | --- |
+| `get_store` | any token | read |
+| `get_approval` | any token with a write scope | read |
+| `needs_attention`, `sales_summary` | `reports:read` | read |
+| `list_orders`, `get_order`, `list_payments` | `orders:read` (buyer ids and the buyer filter also need `customers:read`) | read |
+| `list_categories`, `list_items`, `get_item` | `catalog:read` | read |
+| `list_stock`, `get_item_stock` | `inventory:read` | read |
+| `list_coupons` | `coupons:read` | read |
+| `list_tickets`, `get_ticket` | `support:read` | read |
+| `create_category`, `update_category`, `move_category`, `move_item`, `request_product_file` | `catalog:write` | direct |
+| `update_bundle` | `catalog:write` (and `pricing:write` to add an item) | direct; approval when an add leaves the bundle under half of what its items sell for apart |
+| `create_item`, `create_bundle` | `catalog:write` and `pricing:write` | direct |
+| `add_variant` | `catalog:write` and `pricing:write` | direct; approval for a price under half of the cheapest variant on sale |
+| `update_item`, `update_variant` | `catalog:write` (and `pricing:write` for a price) | direct; approval for a deep price cut |
+| `delete_category`, `delete_item` | `catalog:write` | two-step |
+| `reprice_items` | `catalog:write` and `pricing:write` | two-step; approval if any cut is deep |
+| `create_coupon`, `update_coupon` | `coupons:write` | direct; two-step to switch off a used coupon; approval for a large coupon |
+| `stage_key_import`, `commit_key_import` | `inventory:write` | direct (the stage changes nothing) |
+| `void_keys`, `release_key_holds` | `inventory:write` | two-step |
+| `reply_ticket`, `close_ticket` | `support:write` | direct; approval for a reply with contact details |
+| `restore_downloads` | `fulfillment:write` | direct |
+| `send_broadcast`, `cancel_broadcast` | `broadcasts:write` | approval to send; direct to cancel |
 
 The full definitions, with input and output schemas, are in
-[contracts/merchant-mcp-v1.json](contracts/merchant-mcp-v1.json). Licence-key text, product files, full charge
-ids and tokens are never returned.
+[contracts/merchant-mcp-v1.json](contracts/merchant-mcp-v1.json) (API revision 2026-11-04, 40 tools: the reads, and
+every change in the tables above, approvals, broadcasts, variants, bundles, file requests and repricing included).
+Licence-key text, product files, full charge ids and tokens are never returned.
 
 ## Troubleshooting
 
@@ -138,8 +190,11 @@ ids and tokens are never returned.
 | No shop tools in the session | The plugin is not configured | `/plugin configure shop@shop-plugin`, then `/reload-plugins` |
 | `/mcp` shows `shop` failed, 401 | Wrong token, or it expired or was revoked | Create a new token with `/apitoken new <name>` and configure it |
 | `/mcp` shows `shop` failed, 404 or 405 | Wrong address, or the API is off for the store | Use the exact address `/apitoken` prints |
-| A tool you expected is missing | The token's preset does not include its scope | Create a Support token (tickets) or a Full token (buyer ids) |
-| `rate_limited` | Too many calls in a short time | Wait the `retry_after` seconds |
+| A tool you expected is missing | The token's preset does not include its scope, or your store does not offer that change yet | If "Check my shop connection" shows the scope, a new token does not help; otherwise create a token with a preset that has it |
+| No change tools at all | The token has no write scope (or was created before the store took changes), or changes through the API are off for your store | If the token shows `:write` scopes, ask ApexAi support; otherwise create a Support, Catalog and stock or Full token |
+| A change "waits for approval" (`pending_approval`) | It is a deep price cut, a new variant under half of the cheapest, a bundle add that leaves the bundle under half of its items' prices, a large coupon, a reply with contact details or a broadcast | The store owner taps Approve on the card the store bot sent; ask Claude to check it afterwards |
+| `daily_cap` | A daily limit is reached | Wait until the time Claude reports |
+| `rate_limited` | A reports or changes budget is spent (too many calls of any kind fail with HTTP 429 instead) | Wait the `retry_after` seconds |
 | `window_too_long` | Orders span at most 92 days per call | Ask for shorter periods |
 
 Error codes: [plugins/shop/skills/shop/references/errors.md](plugins/shop/skills/shop/references/errors.md).
@@ -155,16 +210,20 @@ The plugin contacts nothing else, and sends no telemetry.
 ## Privacy
 
 - The token is sent only to the address you configure, as a bearer header.
-- Tool results go into your Claude Code conversation, so they reach the AI provider your Claude Code uses (for
-  example Anthropic). With a Support token that includes support ticket text, and with a Full token, buyer
-  Telegram ids too. Choose the Read-only preset if you do not want that.
-- The store records each token's first use, and every buyer lookup (a buyer filter, or a ticket that shows its
-  buyer), in its audit log.
+- Tool results and everything you send go through your Claude Code conversation, so they reach the AI provider
+  your Claude Code uses (for example Anthropic): support ticket text with a Support or Full token, buyer
+  Telegram ids with a Full token, and **licence keys you import through the conversation**; they also stay in
+  your Claude Code session history. For keys that must stay private, use `/addkeys` with a file in the store
+  bot. Choose the Read-only preset if you want Claude to see the least.
+- The store records each token's first use and first change, every change (with the token that made it), and
+  every buyer lookup (a buyer filter, or a ticket that shows its buyer), in its audit log.
 
 ## Security
 
 See [SECURITY.md](SECURITY.md). In short: the plugin runs no code, the token stays in Claude Code's secure
-storage, every tool only reads, and the skills treat buyer and merchant text as data, never instructions.
+storage, the store enforces scopes, confirmations, approvals and daily caps on every change, and the skills
+make only the changes you ask for and treat buyer and merchant text as data, never instructions. Keep Claude
+Code asking before it runs the store's destructive tools; the store marks them `destructiveHint`.
 
 ## Update and remove
 
