@@ -49,12 +49,9 @@ APPROVAL_TOOLS = {"update_item", "add_variant", "update_variant", "update_bundle
 #: Approval tools whose vendored contract description does not say "approval", each with why. Every entry
 #: must be re-checked on a contract sync: the cross-check below fails once the description says it, so the
 #: entry is dropped then.
-#: - update_bundle: the plugin teaches that an add leaving the bundle under half of its items' prices waits for
-#:   the owner's approval (the store's bundle approval fix); the revision vendored here predates it in the
-#:   store's contract. Drop the entry when a sync brings it.
 #: - update_coupon: the store sends widening a large active coupon for approval (its REST contract says so);
 #:   the MCP tool description leaves it out.
-APPROVAL_NOT_IN_CONTRACT = {"update_bundle", "update_coupon"}
+APPROVAL_NOT_IN_CONTRACT = {"update_coupon"}
 
 #: The review and custom-order tools whose answers carry buyer text: each lists it in `untrusted_fields`, which the skills tell the
 #: agent to treat as data.

@@ -9,6 +9,7 @@ The plugin covers the store's API revision 2026-11-05: review moderation and res
 membership plans and version labels. As before, the store lists the tools a token allows and enforces every
 confirmation, approval and limit.
 
+- **The contract** (synced 2026-11-04) now states that `update_bundle` can wait for the owner's approval, which the skills already taught, and that a store's tier can be `beta` (the free beta's stores).
 - **Three new skills.** `reviews`: the moderation queue, publishing, rejecting or hiding reviews by the
   owner's own rules (shown per review before anything changes), and the store's public response.
   `custom-orders`: reading requests, asking the buyer a clarifying question, rejecting a request, and their
