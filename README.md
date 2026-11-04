@@ -71,7 +71,7 @@ claude plugin install shop@shop-plugin
 Or inside a Claude Code session: `/plugin marketplace add ApexAiOfficial/shop-plugin`, then
 `/plugin install shop@shop-plugin`.
 
-To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.1.0`.
+To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.3.0`.
 
 ## Configure
 
