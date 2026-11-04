@@ -69,6 +69,7 @@ nothing; **Support** has `catalog:read`, `orders:read`, `support:read`, `support
 API has no write scope: the owner creates a new one. A change the store does not offer yet is not listed
 for any token, and when changes through the API are off for the store, no change tool is listed at all,
 whatever the scopes: only reads work, and a new token does not help (ApexAi support can say why).
+Refunds are never available through the API.
 
 ## Pick the skill
 
