@@ -12,7 +12,7 @@ it answers `pending_approval` (see "Approval outcomes" below).
 | --- | --- | --- |
 | `invalid_arguments` | An argument has the wrong type or range, is unknown, or a required one is missing | Fix the call from the message (it names the argument and the rule) |
 | `insufficient_scope` | The token lacks a scope this call needs (`list_orders` with `buyer` needs `customers:read`; any price needs `pricing:write`) | Tell the user which scope; the owner can create a token with a preset that has it (`/apitoken new <name>`) |
-| `not_found` | No item, category, variant, bundle, coupon, order, ticket or approval with that id | Check the id with a list tool |
+| `not_found` | No item, category, variant, bundle, coupon, order, ticket, review, custom-order request, membership plan or approval with that id | Check the id with a list tool |
 | `bad_cursor` | The cursor came from another list, or was edited | Start the list again without `cursor` |
 | `bad_window` | `since` or `until` is not a valid time, or the window starts after it ends | Send RFC 3339 times, `since` before `until` |
 | `window_too_long` | `list_orders` covers at most 92 days | Split the period into windows of 92 days or less |
@@ -31,6 +31,8 @@ it answers `pending_approval` (see "Approval outcomes" below).
 | `too_many_keys` | More than 1,000 keys in one stage | Split into batches of 1,000 or fewer |
 | `nothing_to_stock` | A first key import in which every key was a duplicate or too long | Check the keys; nothing was staged |
 | `ticket_closed` | The ticket is closed and takes no reply | Tell the user; the buyer can open a new ticket |
+| `wrong_state` | A review is a draft or was replaced by the buyer (`current` shows it), or a custom-order request's status does not allow it (`current_status`) | Read it again and tell the user; never retry unchanged |
+| `not_publishable` | The review was withdrawn: its order was refunded, or its buyer forgotten | Tell the user; it can never be published |
 | `invalid_request` | The store refused the change; the message is what the store bot would tell the owner, and may name a Telegram command | Report the message; do not resend the same change |
 | `forbidden` | The store does not let this token make that change | Report the message |
 | `writes_disabled` | Changes through the API are off for this store | Only read; ApexAi support can say why |
@@ -42,7 +44,7 @@ it answers `pending_approval` (see "Approval outcomes" below).
 | `open_bot_chat_first` | The owner has no private chat with the store bot, so it cannot ask them for the file | The owner opens a private chat with the bot, then try again |
 | `idempotency_in_progress` | The same change is still running | Wait `retry_after` seconds, then retry once |
 | `idempotency_key_reused` | An `Idempotency-Key` sent again with other arguments (REST and SDK clients only) | Use a new key for a new change |
-| `store_suspended` | The store is suspended: publishing, creating or widening coupons, and broadcasts wait | Tell the user; other changes still work |
+| `store_suspended` | The store is suspended: publishing, switching a membership plan on, creating or widening coupons, and broadcasts wait | Tell the user; other changes still work |
 | `daily_cap` | A daily limit is reached (see the overview's Limits); `retry_after` says when it frees | Tell the user when; never retry before |
 | `busy` | The store is busy with other changes to the same thing | Wait `retry_after` seconds, then retry once |
 | `no_subscribers` | `send_broadcast`: no buyer has opted in to news, so there is nobody to send to | Tell the user; nothing was sent and no approval was asked |

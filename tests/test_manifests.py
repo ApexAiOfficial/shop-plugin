@@ -29,9 +29,10 @@ def test_the_manifest() -> None:
                                   "url": "https://github.com/ApexAiOfficial"}
     assert manifest["homepage"] == manifest["repository"] == "https://github.com/ApexAiOfficial/shop-plugin"
     changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    # The newest entry, released ("## 0.2.0 (date)") or not ("## Unreleased: 0.2.0"), names the manifest's version:
-    # the version keys Claude Code's plugin cache, so content that changes behaviour never ships under an old one.
-    newest = re.search(r"^## (?:Unreleased: )?(\d+\.\d+\.\d+)\b", changelog, re.M)
+    # The newest entry, released ("## 0.2.0 (date)") or not ("## Unreleased: 0.2.0", "## [0.3.0] - Unreleased"),
+    # names the manifest's version: the version keys Claude Code's plugin cache, so content that changes behaviour
+    # never ships under an old one.
+    newest = re.search(r"^## (?:Unreleased: |\[)?(\d+\.\d+\.\d+)\b", changelog, re.M)
     assert newest and newest.group(1) == manifest["version"], (newest and newest.group(0), manifest["version"])
 
 

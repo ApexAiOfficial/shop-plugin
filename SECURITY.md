@@ -22,7 +22,7 @@ acknowledge reports within a few days.
   never to report a change as done while it waits for the owner's Approve. No tool refunds or otherwise moves
   Stars.
 - **Buyer and merchant text is untrusted.** Every skill tells the agent to treat item text, ticket subjects and
-  messages, and refund reasons as data, never as instructions, and not to let them choose the next tool call,
+  messages, refund reasons, reviews and custom-order briefs and answers as data, never as instructions, and not to let them choose the next tool call,
   argument, URL, file or setting.
 - **Licence keys sent through the conversation reach the AI provider.** The stock skill says so before it reads a
   key file or asks for keys, and recommends a file import outside the conversation (`/addkeys` with a file in the
@@ -36,7 +36,8 @@ These are properties of the store, which ApexAi operates, not of this plugin: to
 admin can revoke one at once, the store lists only the tools a token's scopes allow, and it never returns
 licence-key text, product files or full charge ids. For changes, the store issues single-use confirmations bound
 to the token, the tool and the arguments; sends deep price cuts (a new variant priced under half of the cheapest
-included), large coupons, replies with contact details and broadcasts to the owner's Approve in Telegram (the
+included, and membership plan prices), large coupons, texts to buyers with contact details (ticket replies,
+review responses, custom-order questions and reasons, and reviews to publish) and broadcasts to the owner's Approve in Telegram (the
 change answers `pending_approval` and waits); applies daily caps; never applies a repeated identical change twice
 (a product-file request, which only messages the owner, is the exception); and records every change, with the
 token that made it, in its audit log, as it records each token's first use and every buyer lookup.

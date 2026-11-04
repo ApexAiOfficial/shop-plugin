@@ -1,11 +1,11 @@
 {
   "source": "The merchant MCP contract Shop Bot publishes (merchant-mcp-v1): the tools/list a full-scope token sees, with each tool's scope.",
-  "api_revision": "2026-11-04",
-  "synced": "2026-11-03",
+  "api_revision": "2026-11-05",
+  "synced": "2026-11-04",
   "files": {
     "merchant-mcp-v1.json": {
-      "bytes": 277158,
-      "sha256": "629a0751ac53aa545565398e8c0b3bf291d8b442587e48c9e913e85ddf6130b3"
+      "bytes": 368665,
+      "sha256": "d6aac58121893f191f5d798913f3fbc1ff00e5cbf0df6e6afdc6cde420092d6d"
     }
   }
 }
