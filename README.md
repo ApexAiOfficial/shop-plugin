@@ -10,9 +10,9 @@ the plugin.
 
 | | |
 | --- | --- |
-| Version | 0.3.0, unreleased (0.1.0, the current release, only reads) |
+| Version | 0.3.0 (released 2026-11-04) |
 | Status | Reads and changes, with confirmations and Telegram approvals enforced by the store |
-| Stores | Shop Bot stores on the Business plan or in the free beta, with the merchant API on |
+| Stores | ApexAi-operated Shop Bot stores: every public beta store, and the Business plan |
 | Hosts | Claude Code (plugin). Codex and other MCP clients: [docs/other-clients.md](docs/other-clients.md) |
 | License | Apache-2.0 |
 
@@ -52,12 +52,13 @@ the store, not the plugin, enforces confirmations, approvals and daily limits.
 ## Requirements
 
 - Claude Code 2.1 or later.
-- A Shop Bot store on the Business plan or in the free beta, with the merchant API on. If `/apitoken` in your store bot says the API
-  is not available, write to support@apexaiofficial.com.
-
-**Availability (2026-11-04):** no ApexAi-operated store serves the merchant API yet. A store needs Shop Bot 0.8.0
-or later (not yet released) with the merchant API switched on. Until then, this plugin has nothing to connect to.
+- A Shop Bot store in the public beta or on the Business plan. If `/apitoken` in your store bot says the API is not
+  available, write to support@apexaiofficial.com.
 - An API token: only the store's owner can create one.
+
+**Availability (2026-11-13):** ApexAi-operated stores serve the MCP endpoint now. The public beta is open: create a
+store in [@ApexAiStores_bot](https://t.me/ApexAiStores_bot), and see [apexaiofficial.com/shop](https://apexaiofficial.com/shop)
+for the current price and places.
 
 ## Install
 
