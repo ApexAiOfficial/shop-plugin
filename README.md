@@ -57,7 +57,7 @@ the store, not the plugin, enforces confirmations, approvals and daily limits.
 - An API token: only the store's owner can create one.
 
 **Availability (2026-11-13):** ApexAi-operated stores serve the MCP endpoint now. The public beta is open: create a
-store in [@ApexAiStores_bot](https://t.me/ApexAiStores_bot), and see [apexaiofficial.com/shop](https://apexaiofficial.com/shop)
+store in @ApexAiStores_bot on Telegram, and see [apexaiofficial.com/shop](https://apexaiofficial.com/shop)
 for the current price and places.
 
 ## Install
