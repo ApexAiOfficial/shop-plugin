@@ -32,7 +32,7 @@ any price or to add an item to a bundle (the store bot's Catalog and stock or Fu
 
 | Step | MCP tool |
 | --- | --- |
-| New category, shown, at the end | `create_category(title)` |
+| New category at the end, shown (or hidden with `active: false`, a draft) | `create_category(title, active)` |
 | Rename a category, or show or hide it with all its items | `update_category(category_id, title, active)` |
 | Reorder a category (0 is first) | `move_category(category_id, to_index)` |
 | Delete an empty category | `delete_category(category_id, confirmation)` |

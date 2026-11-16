@@ -39,7 +39,7 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `list_custom_orders(status, limit, cursor)` | Custom-order requests, open ones by default | `custom_orders:read` | read |
 | `get_custom_order(request_id)` | One request: brief, latest answer, the store's question or reason, quote | `custom_orders:read` | read |
 | `get_approval(approval_id)` | A change waiting for the owner's Approve, and its outcome (only for the token that asked) | any token with a write scope | read |
-| `create_category(title)` | A new category, shown, at the end of the list | `catalog:write` | direct |
+| `create_category(title, active)` | A new category, last (`active: false`: a hidden draft) | `catalog:write` | direct |
 | `update_category(category_id, title, active)` | Rename a category, or show or hide it with its items | `catalog:write` | direct |
 | `move_category(category_id, to_index)` | Reorder categories (0 is first) | `catalog:write` | direct |
 | `delete_category(category_id, confirmation)` | Delete an empty category | `catalog:write` | two-step |
@@ -56,7 +56,7 @@ the second passes it once the user agrees); **approval** (the store owner taps A
 | `reprice_items(changes, confirmation)` | Up to 100 price changes at once | `catalog:write` + `pricing:write` | two-step; approval if any is a deep cut |
 | `set_membership_price(plan_id, price_stars, confirmation)` | A plan's price for new joins and rejoins | `catalog:write` + `pricing:write` | two-step; approval for a deep price cut |
 | `set_membership_active(plan_id, active, confirmation)` | Switch a plan on or off | `catalog:write` | direct to switch on; two-step to switch off |
-| `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at)` | A new active coupon | `coupons:write` | direct; approval for a large coupon |
+| `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at, active)` | A new coupon (`active: false`: a draft) | `coupons:write` | direct; approval for a large coupon |
 | `update_coupon(code, active, max_uses, per_user_max_uses, expires_at, confirmation)` | Switch a coupon on or off; change its limits or expiry | `coupons:write` | direct; two-step to switch off a used coupon; approval to widen a large one |
 | `stage_key_import(item_id, keys_text)` | Dry run of a key import; changes nothing | `inventory:write` | direct |
 | `commit_key_import(item_id, staged_import, enable_key_delivery)` | Import a staged batch of keys | `inventory:write` | direct |

@@ -12,7 +12,7 @@ coupon changes need `coupons:write` and broadcasts `broadcasts:write` (the store
 | Step | MCP tool |
 | --- | --- |
 | List coupons, or look one up by code | `list_coupons(status, code, limit, cursor)` |
-| Create a coupon | `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at)` |
+| Create a coupon | `create_coupon(code, pct_off, max_uses, per_user_max_uses, expires_at, active)` |
 | Switch a coupon on or off, change its limits or expiry | `update_coupon(code, active, max_uses, per_user_max_uses, expires_at, confirmation)` |
 | Send a broadcast to the store's buyers | `send_broadcast(text)` |
 | Stop a broadcast | `cancel_broadcast(broadcast_id)` |
@@ -25,7 +25,8 @@ coupon changes need `coupons:write` and broadcasts `broadcasts:write` (the store
   `expires_at` (null: none), `created_at` and `uses` (`paid`, `open_checkouts`).
 - `create_coupon`: `code` is 1 to 32 letters, digits, `_` or `-` (stored upper-case; a space is refused);
   `pct_off` 1 to 100; `max_uses` 1 to 1,000,000, or null for unlimited; `per_user_max_uses` at most
-  `max_uses`; `expires_at` an RFC 3339 time in the next 366 days, or null. The coupon is active at once.
+  `max_uses`; `expires_at` an RFC 3339 time in the next 366 days, or null. The coupon is active at once, unless
+  `active` is false: then it is created switched off, so no buyer can use a draft before `update_coupon` switches it on.
 - Ask for the terms the user did not give instead of guessing: a coupon without `max_uses` is unlimited.
 - A large coupon (`pct_off` 50 or more, unlimited uses, or more than 1,000 uses) needs the owner's
   approval: the answer is `pending_approval` (not an error): the coupon does not exist yet, and the owner

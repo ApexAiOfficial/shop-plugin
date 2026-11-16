@@ -5,6 +5,13 @@ All notable changes to this plugin are documented here. The format follows
 
 ## Unreleased
 
+## 0.4.0 (2026-11-16)
+
+Requires a store on API revision 2026-11-16 (Shop Bot 0.11.20) for drafts.
+
+- `create_category` and `create_coupon` take an optional `active`: `false` creates a hidden category or a switched-off
+  coupon in one call, so buyers never see a draft (shop-bot issue 297). The skills say so; the contract copy follows
+  the store's.
 - The setup skill no longer calls the beta free: it asks for a store in the public beta or on the Business plan.
 - README: 0.3.0 is the current release; ApexAi-operated stores serve the MCP endpoint now; the beta is the public
   beta, not a free one.

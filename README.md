@@ -10,7 +10,7 @@ the plugin.
 
 | | |
 | --- | --- |
-| Version | 0.3.0 (released 2026-11-04) |
+| Version | 0.4.0 (released 2026-11-16) |
 | Status | Reads and changes, with confirmations and Telegram approvals enforced by the store |
 | Stores | ApexAi-operated Shop Bot stores: every public beta store, and the Business plan |
 | Hosts | Claude Code (plugin). Codex and other MCP clients: [docs/other-clients.md](docs/other-clients.md) |
@@ -72,7 +72,7 @@ claude plugin install shop@shop-plugin
 Or inside a Claude Code session: `/plugin marketplace add ApexAiOfficial/shop-plugin`, then
 `/plugin install shop@shop-plugin`.
 
-To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.3.0`.
+To pin a release: `claude plugin marketplace add ApexAiOfficial/shop-plugin#v0.4.0`.
 
 ## Configure
 
