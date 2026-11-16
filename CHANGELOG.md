@@ -5,6 +5,7 @@ All notable changes to this plugin are documented here. The format follows
 
 ## Unreleased
 
+- The setup skill no longer calls the beta free: it asks for a store in the public beta or on the Business plan.
 - README: 0.3.0 is the current release; ApexAi-operated stores serve the MCP endpoint now; the beta is the public
   beta, not a free one.
 
